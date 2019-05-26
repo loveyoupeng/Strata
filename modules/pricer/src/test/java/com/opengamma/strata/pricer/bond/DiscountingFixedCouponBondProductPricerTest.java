@@ -6,6 +6,7 @@
 package com.opengamma.strata.pricer.bond;
 
 import static com.opengamma.strata.basics.currency.Currency.EUR;
+import static com.opengamma.strata.basics.currency.Currency.GBP;
 import static com.opengamma.strata.basics.date.DayCounts.ACT_365F;
 import static com.opengamma.strata.basics.date.HolidayCalendarIds.JPTO;
 import static com.opengamma.strata.basics.date.HolidayCalendarIds.SAT_SUN;
@@ -17,9 +18,12 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import org.testng.annotations.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.opengamma.strata.basics.ReferenceData;
 import com.opengamma.strata.basics.currency.Currency;
@@ -772,6 +776,54 @@ public class DiscountingFixedCouponBondProductPricerTest {
   public void macaulayDurationFromYieldYieldJP() {
     assertThrows(() -> PRICER.macaulayDurationFromYield(PRODUCT_JP, SETTLEMENT_JP, YIELD_JP),
         UnsupportedOperationException.class, "The convention JP_SIMPLE is not supported.");
+  }
+
+  public void zSpreadFromCurvesAndPV_acrossExDivDate() {
+    LocalDate threeDayBeforeExDiv = LocalDate.of(2019, 2, 24);
+    LocalDate twoDayBeforeExDiv = LocalDate.of(2019, 2, 25);
+    LocalDate oneDayBeforeExDiv = LocalDate.of(2019, 2, 26);
+    LocalDate exDiv = LocalDate.of(2019, 2, 27);
+    LocalDate exDivP1 = LocalDate.of(2019, 2, 28);
+    ResolvedFixedCouponBond bond = FixedCouponBond.builder()
+        .securityId(SECURITY_ID)
+        .dayCount(DayCounts.ACT_ACT_ICMA)
+        .fixedRate(0.0375)
+        .legalEntityId(ISSUER_ID)
+        .currency(GBP)
+        .notional(NOTIONAL)
+        .accrualSchedule(PeriodicSchedule.of(LocalDate.of(2010, 9, 7), LocalDate.of(2020, 9, 7), Frequency.P6M,
+            BusinessDayAdjustment.of(BusinessDayConventions.MODIFIED_FOLLOWING, HolidayCalendarIds.GBLO),
+            StubConvention.SMART_INITIAL, false))
+        .settlementDateOffset(DaysAdjustment.ofBusinessDays(1, HolidayCalendarIds.GBLO))
+        .yieldConvention(FixedCouponBondYieldConvention.GB_BUMP_DMO)
+        .exCouponPeriod(DaysAdjustment.ofCalendarDays(-8,
+            BusinessDayAdjustment.of(BusinessDayConventions.MODIFIED_FOLLOWING, HolidayCalendarIds.GBLO)))
+        .build()
+        .resolve(REF_DATA);
+    List<LocalDate> dates = ImmutableList.of(threeDayBeforeExDiv, twoDayBeforeExDiv, oneDayBeforeExDiv, exDiv, exDivP1);
+
+    for (LocalDate date : dates) {
+      LegalEntityDiscountingProvider dateProvider = ImmutableLegalEntityDiscountingProvider.builder()
+          .issuerCurves(
+              ImmutableMap.of(Pair.of(GROUP_ISSUER, GBP), ZeroRateDiscountFactors.of(GBP, date, CURVE_ISSUER)))
+          .issuerCurveGroups(ImmutableMap.of(ISSUER_ID, GROUP_ISSUER))
+          .repoCurves(ImmutableMap.of(Pair.of(GROUP_REPO, GBP), ZeroRateDiscountFactors.of(GBP, date, CURVE_REPO)))
+          .repoCurveSecurityGroups(ImmutableMap.of(SECURITY_ID, GROUP_REPO))
+          .valuationDate(date)
+          .build();
+      LocalDate settlement = DaysAdjustment.ofBusinessDays(1, HolidayCalendarIds.GBLO).adjust(date, REF_DATA);
+      double dirtyPrice = PRICER.dirtyPriceFromCleanPrice(bond, settlement, 1.04494d);
+
+      double zSpread = PRICER.zSpreadFromCurvesAndDirtyPrice(bond, dateProvider, REF_DATA, dirtyPrice, PERIODIC, 2);
+      double dirtyPriceZ = PRICER.dirtyPriceFromCurvesWithZSpread(bond, dateProvider, REF_DATA, zSpread, PERIODIC, 2);
+      assertEquals(dirtyPriceZ, dirtyPrice, TOL);
+      assertEquals(zSpread, -.025, 5e-3, date.format(DateTimeFormatter.ISO_DATE));
+
+      double yield = PRICER.yieldFromDirtyPrice(bond, settlement, dirtyPrice);
+      double dirtyPriceY = PRICER.dirtyPriceFromYield(bond, settlement, yield);
+      assertEquals(dirtyPriceY, dirtyPrice, TOL);
+      assertEquals(yield, .007, 1e-3, date.format(DateTimeFormatter.ISO_DATE));
+    }
   }
 
 }

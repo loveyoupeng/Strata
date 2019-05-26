@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Streams;
 
@@ -95,7 +96,7 @@ public final class MapStream<K, V>
    * @param keyFunction  a function which returns the key for a value
    * @return a stream of map entries derived from the values in the collection
    */
-  public static <K, V> MapStream<K, V> of(Collection<V> collection, Function<V, K> keyFunction) {
+  public static <K, V> MapStream<K, V> of(Collection<V> collection, Function<? super V, ? extends K> keyFunction) {
     return of(collection.stream(), keyFunction);
   }
 
@@ -113,8 +114,8 @@ public final class MapStream<K, V>
    */
   public static <T, K, V> MapStream<K, V> of(
       Collection<T> collection,
-      Function<T, K> keyFunction,
-      Function<T, V> valueFunction) {
+      Function<? super T, ? extends K> keyFunction,
+      Function<? super T, ? extends V> valueFunction) {
 
     return of(collection.stream(), keyFunction, valueFunction);
   }
@@ -129,7 +130,7 @@ public final class MapStream<K, V>
    * @param keyFunction  a function which returns the key for a value
    * @return a stream of map entries derived from the values in the stream
    */
-  public static <K, V> MapStream<K, V> of(Stream<V> stream, Function<V, K> keyFunction) {
+  public static <K, V> MapStream<K, V> of(Stream<V> stream, Function<? super V, ? extends K> keyFunction) {
     return new MapStream<>(stream.map(v -> entry(keyFunction.apply(v), v)));
   }
 
@@ -147,10 +148,10 @@ public final class MapStream<K, V>
    */
   public static <T, K, V> MapStream<K, V> of(
       Stream<T> stream,
-      Function<T, K> keyFunction,
-      Function<T, V> valueFunction) {
+      Function<? super T, ? extends K> keyFunction,
+      Function<? super T, ? extends V> valueFunction) {
 
-    return new MapStream<>(stream.map(item -> entry(keyFunction.apply(item), valueFunction.apply(item))));
+    return new MapStream<K, V>(stream.map(item -> entry(keyFunction.apply(item), valueFunction.apply(item))));
   }
 
   //-------------------------------------------------------------------------
@@ -666,6 +667,17 @@ public final class MapStream<K, V>
    */
   public ImmutableListMultimap<K, V> toListMultimap() {
     return underlying.collect(Guavate.toImmutableListMultimap(Entry::getKey, Entry::getValue));
+  }
+
+  /**
+   * Returns an immutable set multimap built from the entries in the stream.
+   * <p>
+   * This is a terminal operation.
+   *
+   * @return an immutable set multimap built from the entries in the stream
+   */
+  public ImmutableSetMultimap<K, V> toSetMultimap() {
+    return underlying.collect(Guavate.toImmutableSetMultimap(Entry::getKey, Entry::getValue));
   }
 
   /**

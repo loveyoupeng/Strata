@@ -5,17 +5,23 @@
  */
 package com.opengamma.strata.collect.io;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 
 import com.google.common.base.Optional;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteProcessor;
 import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
@@ -104,6 +110,16 @@ public final class ArrayByteSource extends ByteSource {
     return new ArrayByteSource(array);
   }
 
+  /**
+   * Creates an instance from a string using UTF-8.
+   * 
+   * @param str  the string to store using UTF-8
+   * @return the byte source
+   */
+  public static ArrayByteSource ofUtf8(String str) {
+    return new ArrayByteSource(str.getBytes(StandardCharsets.UTF_8));
+  }
+
   //-------------------------------------------------------------------------
   /**
    * Creates an instance from another byte source.
@@ -137,6 +153,29 @@ public final class ArrayByteSource extends ByteSource {
         return new ArrayByteSource(bytes);
       }
     });
+  }
+
+  //-------------------------------------------------------------------------
+  /**
+   * Creates an instance from a base-64 encoded string.
+   * 
+   * @param base64  the base64 string to convert
+   * @return the decoded byte source
+   * @throws IllegalArgumentException if the input is not Base64 encoded
+   */
+  public static ArrayByteSource fromBase64(String base64) {
+    return new ArrayByteSource(Base64.getDecoder().decode(base64));
+  }
+
+  /**
+   * Creates an instance from a hex encoded string, sometimes referred to as base-16.
+   * 
+   * @param hex  the hex string to convert
+   * @return the decoded byte source
+   * @throws IllegalArgumentException if the input is not hex encoded
+   */
+  public static ArrayByteSource fromHex(String hex) {
+    return new ArrayByteSource(BaseEncoding.base16().decode(hex));
   }
 
   //-------------------------------------------------------------------------
@@ -190,6 +229,66 @@ public final class ArrayByteSource extends ByteSource {
   }
 
   //-------------------------------------------------------------------------
+  /**
+   * Returns the MD5 hash of the bytes.
+   * 
+   * @return the MD5 hash
+   */
+  public ArrayByteSource toMd5() {
+    try {
+      // MessageDigest instances are not thread safe so must be created each time
+      MessageDigest md = MessageDigest.getInstance("MD5");
+      return ArrayByteSource.ofUnsafe(md.digest(array));
+    } catch (NoSuchAlgorithmException ex) {
+      throw new IllegalStateException(ex);
+    }
+  }
+
+  /**
+   * Returns the SHA-512 hash of the bytes.
+   * 
+   * @return the SHA-512 hash
+   */
+  public ArrayByteSource toSha512() {
+    try {
+      // MessageDigest instances are not thread safe so must be created each time
+      MessageDigest md = MessageDigest.getInstance("SHA-512");
+      return ArrayByteSource.ofUnsafe(md.digest(array));
+    } catch (NoSuchAlgorithmException ex) {
+      throw new IllegalStateException(ex);
+    }
+  }
+
+  /**
+   * Encodes the byte source using base-64.
+   * 
+   * @return the base-64 encoded form
+   */
+  public ArrayByteSource toBase64() {
+    return ArrayByteSource.ofUnsafe(Base64.getEncoder().encode(array));
+  }
+
+  /**
+   * Encodes the byte source using base-64, returning a string.
+   * <p>
+   * Equivalent to {@code toBase64().readUtf8()}.
+   * 
+   * @return the base-64 encoded string
+   */
+  public String toBase64String() {
+    return Base64.getEncoder().encodeToString(array);
+  }
+
+  /**
+   * Encodes the byte source using hex, sometimes referred to as base-16, returning a string.
+   * 
+   * @return the hex encoded string
+   */
+  public String toHexString() {
+    return BaseEncoding.base16().encode(array);
+  }
+
+  //-------------------------------------------------------------------------
   @Override
   public ByteArrayInputStream openStream() {
     return new ByteArrayInputStream(array);
@@ -221,6 +320,19 @@ public final class ArrayByteSource extends ByteSource {
   }
 
   @Override
+  public ArrayByteSource slice(long offset, long length) {
+    checkArgument(offset >= 0, "offset (%s) may not be negative", offset);
+    checkArgument(length >= 0, "length (%s) may not be negative", length);
+    if (offset > array.length) {
+      return EMPTY;
+    }
+    int minPos = (int) offset;
+    long len = Math.min(Math.min(length, Integer.MAX_VALUE), array.length);
+    int maxPos = (int) Math.min(minPos + len, array.length);
+    return new ArrayByteSource(Arrays.copyOfRange(array, minPos, maxPos));
+  }
+
+  @Override
   public long copyTo(OutputStream output) throws IOException {
     output.write(array);
     return array.length;
@@ -240,6 +352,28 @@ public final class ArrayByteSource extends ByteSource {
   @Override
   public HashCode hash(HashFunction hashFunction) {
     return hashFunction.hashBytes(array);
+  }
+
+  @Override
+  public boolean contentEquals(ByteSource other) throws IOException {
+    if (other instanceof ArrayByteSource) {
+      return equals(other);
+    }
+    return super.contentEquals(other);
+  }
+
+  //-------------------------------------------------------------------------
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof ArrayByteSource) {
+      return Arrays.equals(array, ((ArrayByteSource) obj).array);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(array);
   }
 
   @Override

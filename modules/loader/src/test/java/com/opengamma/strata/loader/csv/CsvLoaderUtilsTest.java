@@ -88,7 +88,7 @@ public class CsvLoaderUtilsTest {
     ImmutableList<String> firstRow = ImmutableList.of("2019-03-01", "F", "GBLO");
     CsvRow row = CsvFile.of(headers, ImmutableList.of(firstRow)).row(0);
     assertEquals(
-        CsvLoaderUtils.parseAdjustableDate(row, "DTE", "CNV", "CAL", Currency.EUR),
+        CsvLoaderUtils.parseAdjustableDate(row, "DTE", "CNV", "CAL", FOLLOWING, Currency.EUR),
         AdjustableDate.of(
             LocalDate.of(2019, 3, 1),
             BusinessDayAdjustment.of(FOLLOWING, HolidayCalendarIds.GBLO)));
@@ -99,7 +99,7 @@ public class CsvLoaderUtilsTest {
     ImmutableList<String> firstRow = ImmutableList.of("2019-03-01");
     CsvRow row = CsvFile.of(headers, ImmutableList.of(firstRow)).row(0);
     assertEquals(
-        CsvLoaderUtils.parseAdjustableDate(row, "DTE", "CNV", "CAL", Currency.EUR),
+        CsvLoaderUtils.parseAdjustableDate(row, "DTE", "CNV", "CAL", FOLLOWING, Currency.EUR),
         AdjustableDate.of(LocalDate.of(2019, 3, 1), BusinessDayAdjustment.of(FOLLOWING, EUTA)));
   }
 
@@ -158,6 +158,21 @@ public class CsvLoaderUtilsTest {
     ImmutableList<String> firstRow = ImmutableList.of("GBP", "123.4", "Pay");
     CsvRow row = CsvFile.of(headers, ImmutableList.of(firstRow)).row(0);
     assertThrowsIllegalArg(() -> CsvLoaderUtils.parseCurrencyAmountWithDirection(row, "CCX", "AMT", "DIR"));
+  }
+
+  //-------------------------------------------------------------------------
+  public void test_formattedDouble() {
+    assertEquals(CsvLoaderUtils.formattedDouble(123.45d), "123.45");
+    assertEquals(CsvLoaderUtils.formattedDouble(0.7d), "0.7");
+    assertEquals(CsvLoaderUtils.formattedDouble(0.08d), "0.08");
+    assertEquals(CsvLoaderUtils.formattedDouble(789d), "789");
+  }
+
+  public void test_formattedPercentage() {
+    assertEquals(CsvLoaderUtils.formattedPercentage(1.2345d), "123.45");
+    assertEquals(CsvLoaderUtils.formattedPercentage(0.007d), "0.7");
+    assertEquals(CsvLoaderUtils.formattedPercentage(0.08d), "8");
+    assertEquals(CsvLoaderUtils.formattedPercentage(7.89d), "789");
   }
 
 }

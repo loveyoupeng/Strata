@@ -10,12 +10,15 @@ import com.opengamma.strata.collect.io.CsvRow;
 import com.opengamma.strata.product.SecurityTrade;
 import com.opengamma.strata.product.Trade;
 import com.opengamma.strata.product.TradeInfoBuilder;
+import com.opengamma.strata.product.credit.CdsTrade;
 import com.opengamma.strata.product.deposit.TermDepositTrade;
 import com.opengamma.strata.product.fra.FraTrade;
 import com.opengamma.strata.product.fx.FxSingleTrade;
 import com.opengamma.strata.product.fx.FxSwapTrade;
+import com.opengamma.strata.product.fxopt.FxVanillaOptionTrade;
 import com.opengamma.strata.product.payment.BulletPaymentTrade;
 import com.opengamma.strata.product.swap.SwapTrade;
+import com.opengamma.strata.product.swaption.SwaptionTrade;
 
 /**
  * Resolves additional information when parsing trade CSV files.
@@ -117,7 +120,7 @@ public interface TradeCsvInfoResolver {
   }
 
   /**
-   * Completes the FRA trade, potentially parsing additional columns.
+   * Completes the Swap trade, potentially parsing additional columns.
    * <p>
    * This is called after the trade has been parsed and after
    * {@link #parseTradeInfo(CsvRow, TradeInfoBuilder)}.
@@ -129,6 +132,23 @@ public interface TradeCsvInfoResolver {
    * @return the updated trade
    */
   public default SwapTrade completeTrade(CsvRow row, SwapTrade trade) {
+    // do nothing
+    return completeTradeCommon(row, trade);
+  }
+
+  /**
+   * Completes the Swaption trade, potentially parsing additional columns.
+   * <p>
+   * This is called after the trade has been parsed and after
+   * {@link #parseTradeInfo(CsvRow, TradeInfoBuilder)}.
+   * <p>
+   * By default this calls {@link #completeTradeCommon(CsvRow, Trade)}.
+   * 
+   * @param row  the CSV row to parse
+   * @param trade  the parsed trade
+   * @return the updated trade
+   */
+  public default SwaptionTrade completeTrade(CsvRow row, SwaptionTrade trade) {
     // do nothing
     return completeTradeCommon(row, trade);
   }
@@ -176,8 +196,8 @@ public interface TradeCsvInfoResolver {
    * By default this calls {@link #completeTradeCommon(CsvRow, Trade)}.
    *
    * @param row  the CSV row to parse
-   * @param trade  the parsed trade, as an instance of {@link FxSingleTrade}
-   * @return the updated trade, as an instance of {@link FxSingleTrade}
+   * @param trade  the parsed trade
+   * @return the updated trade
    */
   public default FxSingleTrade completeTrade(CsvRow row, FxSingleTrade trade) {
     //do nothing
@@ -193,10 +213,44 @@ public interface TradeCsvInfoResolver {
    * By default this calls {@link #completeTradeCommon(CsvRow, Trade)}.
    *
    * @param row  the CSV row to parse
-   * @param trade  the parsed trade, as an instance of {@link FxSwapTrade}
-   * @return the updated trade, as an instance of {@link FxSwapTrade}
+   * @param trade  the parsed trade
+   * @return the updated trade
    */
   public default FxSwapTrade completeTrade(CsvRow row, FxSwapTrade trade) {
+    //do nothing
+    return completeTradeCommon(row, trade);
+  }
+
+  /**
+   * Completes the FX Vanilla Option trade, potentially parsing additional columns.
+   * <p>
+   * This is called after the trade has been parsed and after
+   * {@link #parseTradeInfo(CsvRow, TradeInfoBuilder)}.
+   * <p>
+   * By default this calls {@link #completeTradeCommon(CsvRow, Trade)}.
+   *
+   * @param row  the CSV row to parse
+   * @param trade  the parsed trade
+   * @return the updated trade
+   */
+  public default FxVanillaOptionTrade completeTrade(CsvRow row, FxVanillaOptionTrade trade) {
+    //do nothing
+    return completeTradeCommon(row, trade);
+  }
+
+  /**
+   * Completes the CDS trade, potentially parsing additional columns.
+   * <p>
+   * This is called after the trade has been parsed and after
+   * {@link #parseTradeInfo(CsvRow, TradeInfoBuilder)}.
+   * <p>
+   * By default this calls {@link #completeTradeCommon(CsvRow, Trade)}.
+   *
+   * @param row  the CSV row to parse
+   * @param trade  the parsed trade
+   * @return the updated trade
+   */
+  public default CdsTrade completeTrade(CsvRow row, CdsTrade trade) {
     //do nothing
     return completeTradeCommon(row, trade);
   }

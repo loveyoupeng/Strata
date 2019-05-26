@@ -36,6 +36,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.joda.beans.Bean;
 import org.testng.annotations.Test;
 
 import com.google.common.base.Joiner;
@@ -44,6 +45,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharSource;
 import com.opengamma.strata.basics.ReferenceData;
 import com.opengamma.strata.basics.StandardId;
+import com.opengamma.strata.basics.currency.AdjustablePayment;
 import com.opengamma.strata.basics.currency.Currency;
 import com.opengamma.strata.basics.currency.CurrencyAmount;
 import com.opengamma.strata.basics.currency.FxRate;
@@ -78,6 +80,12 @@ import com.opengamma.strata.product.SecurityPriceInfo;
 import com.opengamma.strata.product.SecurityTrade;
 import com.opengamma.strata.product.Trade;
 import com.opengamma.strata.product.TradeInfo;
+import com.opengamma.strata.product.common.LongShort;
+import com.opengamma.strata.product.credit.Cds;
+import com.opengamma.strata.product.credit.CdsTrade;
+import com.opengamma.strata.product.credit.PaymentOnDefault;
+import com.opengamma.strata.product.credit.ProtectionStartOfDay;
+import com.opengamma.strata.product.credit.type.CdsConventions;
 import com.opengamma.strata.product.deposit.TermDeposit;
 import com.opengamma.strata.product.deposit.TermDepositTrade;
 import com.opengamma.strata.product.deposit.type.TermDepositConventions;
@@ -88,6 +96,8 @@ import com.opengamma.strata.product.fx.FxSingle;
 import com.opengamma.strata.product.fx.FxSingleTrade;
 import com.opengamma.strata.product.fx.FxSwap;
 import com.opengamma.strata.product.fx.FxSwapTrade;
+import com.opengamma.strata.product.fxopt.FxVanillaOption;
+import com.opengamma.strata.product.fxopt.FxVanillaOptionTrade;
 import com.opengamma.strata.product.payment.BulletPayment;
 import com.opengamma.strata.product.payment.BulletPaymentTrade;
 import com.opengamma.strata.product.swap.CompoundingMethod;
@@ -113,6 +123,11 @@ import com.opengamma.strata.product.swap.Swap;
 import com.opengamma.strata.product.swap.SwapTrade;
 import com.opengamma.strata.product.swap.type.FixedIborSwapConventions;
 import com.opengamma.strata.product.swap.type.XCcyIborIborSwapConventions;
+import com.opengamma.strata.product.swaption.CashSwaptionSettlement;
+import com.opengamma.strata.product.swaption.CashSwaptionSettlementMethod;
+import com.opengamma.strata.product.swaption.PhysicalSwaptionSettlement;
+import com.opengamma.strata.product.swaption.Swaption;
+import com.opengamma.strata.product.swaption.SwaptionTrade;
 
 /**
  * Test {@link TradeCsvLoader}.
@@ -155,7 +170,7 @@ public class TradeCsvLoaderTest {
     List<FxSingleTrade> loadedTrades = loadedData.getValue();
     assertEquals(loadedTrades.size(), 2);
 
-    FxSingleTrade expectedTrade1 = FxSingleTrade.builder()
+    FxSingleTrade expected0 = FxSingleTrade.builder()
         .info(TradeInfo.builder()
             .tradeDate(LocalDate.parse("2016-12-06"))
             .id(StandardId.of("OG", "tradeId1"))
@@ -166,16 +181,18 @@ public class TradeCsvLoaderTest {
             LocalDate.parse("2016-12-08"),
             BusinessDayAdjustment.of(FOLLOWING, USNY)))
         .build();
-    assertBeanEquals(loadedTrades.get(0), expectedTrade1);
+    assertBeanEquals(loadedTrades.get(0), expected0);
 
-    FxSingleTrade expectedTrade2 = FxSingleTrade.builder()
+    FxSingleTrade expected1 = FxSingleTrade.builder()
         .info(TradeInfo.builder()
             .tradeDate(LocalDate.parse("2016-12-22"))
             .id(StandardId.of("OG", "tradeId2"))
             .build())
         .product(FxSingle.of(CurrencyAmount.of(EUR, 1920000), FxRate.of(EUR, CZK, 25.62), LocalDate.parse("2016-12-24")))
         .build();
-    assertBeanEquals(loadedTrades.get(1), expectedTrade2);
+    assertBeanEquals(loadedTrades.get(1), expected1);
+
+    checkRoundtrip(FxSingleTrade.class, loadedTrades, expected0, expected1);
   }
 
   @Test
@@ -281,25 +298,27 @@ public class TradeCsvLoaderTest {
 
     FxSingle near1 = FxSingle.of(CurrencyAmount.of(USD, 120000), FxRate.of(USD, CAD, 1.31), LocalDate.parse("2016-12-08"));
     FxSingle far1 = FxSingle.of(CurrencyAmount.of(USD, -120000), FxRate.of(USD, CAD, 1.34), LocalDate.parse("2017-01-08"));
-    FxSwapTrade expectedTrade1 = FxSwapTrade.builder()
+    FxSwapTrade expected0 = FxSwapTrade.builder()
         .info(TradeInfo.builder()
             .tradeDate(LocalDate.parse("2016-12-06"))
             .id(StandardId.of("OG", "tradeId11"))
             .build())
         .product(FxSwap.of(near1, far1))
         .build();
-    assertBeanEquals(loadedTrades.get(0), expectedTrade1);
+    assertBeanEquals(loadedTrades.get(0), expected0);
 
     FxSingle near2 = FxSingle.of(CurrencyAmount.of(CAD, -160000), FxRate.of(USD, CAD, 1.32), LocalDate.parse("2016-12-08"));
     FxSingle far2 = FxSingle.of(CurrencyAmount.of(CAD, 160000), FxRate.of(USD, CAD, 1.34), LocalDate.parse("2017-01-08"));
-    FxSwapTrade expectedTrade2 = FxSwapTrade.builder()
+    FxSwapTrade expected1 = FxSwapTrade.builder()
         .info(TradeInfo.builder()
             .tradeDate(LocalDate.parse("2016-12-06"))
             .id(StandardId.of("OG", "tradeId12"))
             .build())
         .product(FxSwap.of(near2, far2))
         .build();
-    assertBeanEquals(loadedTrades.get(1), expectedTrade2);
+    assertBeanEquals(loadedTrades.get(1), expected1);
+
+    checkRoundtrip(FxSwapTrade.class, loadedTrades, expected0, expected1);
   }
 
   public void test_load_fx_swaps_fullFormat() throws Exception {
@@ -329,7 +348,41 @@ public class TradeCsvLoaderTest {
         .build();
     assertBeanEquals(loadedTrades.get(0), expectedTrade1);
   }
-  
+
+  //-------------------------------------------------------------------------
+  @Test
+  public void test_load_fx_vanilla_option() throws Exception {
+    TradeCsvLoader standard = TradeCsvLoader.standard();
+    ResourceLocator locator = ResourceLocator.of("classpath:com/opengamma/strata/loader/csv/fxtrades.csv");
+    ImmutableList<CharSource> charSources = ImmutableList.of(locator.getCharSource());
+    ValueWithFailures<List<FxVanillaOptionTrade>> loadedData = standard.parse(charSources, FxVanillaOptionTrade.class);
+    assertEquals(loadedData.getFailures().size(), 0, loadedData.getFailures().toString());
+
+    List<FxVanillaOptionTrade> loadedTrades = loadedData.getValue();
+    assertEquals(loadedTrades.size(), 1);
+
+    FxVanillaOptionTrade expectedTrade0 = FxVanillaOptionTrade.builder()
+        .info(TradeInfo.builder()
+            .tradeDate(LocalDate.parse("2016-12-06"))
+            .id(StandardId.of("OG", "tradeId31"))
+            .build())
+        .product(FxVanillaOption.builder()
+            .longShort(LongShort.LONG)
+            .expiryDate(LocalDate.of(2017, 1, 8))
+            .expiryTime(LocalTime.of(11, 0))
+            .expiryZone(ZoneId.of("Europe/London"))
+            .underlying(FxSingle.of(
+                CurrencyAmount.of(USD, 30000),
+                FxRate.of(USD, CAD, 1.31),
+                LocalDate.of(2017, 1, 10)))
+            .build())
+        .premium(AdjustablePayment.of(
+            CurrencyAmount.of(GBP, -2000),
+            AdjustableDate.of(LocalDate.of(2016, 12, 8))))
+        .build();
+    assertBeanEquals(loadedTrades.get(0), expectedTrade0);
+  }
+
   //-------------------------------------------------------------------------
   public void test_load_fra() {
     TradeCsvLoader test = TradeCsvLoader.standard();
@@ -340,7 +393,7 @@ public class TradeCsvLoaderTest {
         .collect(toImmutableList());
     assertEquals(filtered.size(), 3);
 
-    FraTrade expected1 = FraConventions.of(IborIndices.GBP_LIBOR_3M)
+    FraTrade expected0 = FraConventions.of(IborIndices.GBP_LIBOR_3M)
         .createTrade(date(2017, 6, 1), Period.ofMonths(2), BUY, 1_000_000, 0.005, REF_DATA)
         .toBuilder()
         .info(TradeInfo.builder()
@@ -350,9 +403,9 @@ public class TradeCsvLoaderTest {
             .zone(ZoneId.of("Europe/London"))
             .build())
         .build();
-    assertBeanEquals(expected1, filtered.get(0));
+    assertBeanEquals(expected0, filtered.get(0));
 
-    FraTrade expected2 = FraConventions.of(IborIndices.GBP_LIBOR_6M)
+    FraTrade expected1 = FraConventions.of(IborIndices.GBP_LIBOR_6M)
         .toTrade(date(2017, 6, 1), date(2017, 8, 1), date(2018, 2, 1), date(2017, 8, 1), SELL, 1_000_000, 0.007)
         .toBuilder()
         .info(TradeInfo.builder()
@@ -362,9 +415,9 @@ public class TradeCsvLoaderTest {
             .zone(ZoneId.of("Europe/London"))
             .build())
         .build();
-    assertBeanEquals(expected2, filtered.get(1));
+    assertBeanEquals(expected1, filtered.get(1));
 
-    FraTrade expected3 = FraTrade.builder()
+    FraTrade expected2 = FraTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123403"))
             .tradeDate(date(2017, 6, 1))
@@ -380,7 +433,9 @@ public class TradeCsvLoaderTest {
             .dayCount(DayCounts.ACT_360)
             .build())
         .build();
-    assertBeanEquals(expected3, filtered.get(2));
+    assertBeanEquals(expected2, filtered.get(2));
+
+    checkRoundtrip(FraTrade.class, filtered, expected0, expected1, expected2);
   }
 
   //-------------------------------------------------------------------------
@@ -503,7 +558,28 @@ public class TradeCsvLoaderTest {
         .collect(toImmutableList());
     assertEquals(filtered.size(), NUMBER_SWAPS);
 
-    SwapTrade expected1 = FixedIborSwapConventions.GBP_FIXED_1Y_LIBOR_3M
+    SwapTrade expected0 = expectedSwap0();
+    SwapTrade expected1 = expectedSwap1();
+    SwapTrade expected2 = expectedSwap2();
+    SwapTrade expected3 = expectedSwap3();
+    SwapTrade expected4 = expectedSwap4();
+    SwapTrade expected5 = expectedSwap5();
+    SwapTrade expected6 = expectedSwap6();
+
+    assertBeanEquals(expected0, filtered.get(0));
+    assertBeanEquals(expected1, filtered.get(1));
+    assertBeanEquals(expected2, filtered.get(2));
+    assertBeanEquals(expected3, filtered.get(3));
+    assertBeanEquals(expected4, filtered.get(4));
+    assertBeanEquals(expected5, filtered.get(5));
+    assertBeanEquals(expected6, filtered.get(6));
+
+    checkRoundtrip(
+        SwapTrade.class, filtered, expected0, expected1, expected2, expected3, expected4, expected5, expected6);
+  }
+
+  private SwapTrade expectedSwap0() {
+    return FixedIborSwapConventions.GBP_FIXED_1Y_LIBOR_3M
         .createTrade(date(2017, 6, 1), Period.ofMonths(1), Tenor.ofYears(5), BUY, 2_000_000, 0.004, REF_DATA)
         .toBuilder()
         .info(TradeInfo.builder()
@@ -511,9 +587,10 @@ public class TradeCsvLoaderTest {
             .tradeDate(date(2017, 6, 1))
             .build())
         .build();
-    assertBeanEquals(expected1, filtered.get(0));
+  }
 
-    SwapTrade expected2 = FixedIborSwapConventions.GBP_FIXED_6M_LIBOR_6M
+  private SwapTrade expectedSwap1() {
+    return FixedIborSwapConventions.GBP_FIXED_6M_LIBOR_6M
         .toTrade(date(2017, 6, 1), date(2017, 8, 1), date(2022, 8, 1), BUY, 3_100_000, -0.0001)
         .toBuilder()
         .info(TradeInfo.builder()
@@ -521,8 +598,9 @@ public class TradeCsvLoaderTest {
             .tradeDate(date(2017, 6, 1))
             .build())
         .build();
-    assertBeanEquals(expected2, filtered.get(1));
+  }
 
+  private SwapTrade expectedSwap2() {
     NotionalSchedule notionalSchedule = NotionalSchedule.of(GBP,
         ValueSchedule.of(
             5_000_000,
@@ -530,7 +608,7 @@ public class TradeCsvLoaderTest {
             ValueStep.of(date(2019, 8, 1), ValueAdjustment.ofReplace(3_000_000)),
             ValueStep.of(date(2020, 8, 1), ValueAdjustment.ofReplace(2_000_000)),
             ValueStep.of(date(2021, 8, 1), ValueAdjustment.ofReplace(1_000_000))));
-    Swap expectedSwap3 = Swap.builder()
+    Swap expectedSwap = Swap.builder()
         .legs(
             RateCalculationSwapLeg.builder()
                 .payReceive(PAY)
@@ -571,16 +649,17 @@ public class TradeCsvLoaderTest {
                 .calculation(IborRateCalculation.of(IborIndices.GBP_LIBOR_6M))
                 .build())
         .build();
-    SwapTrade expected3 = SwapTrade.builder()
+    return SwapTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123413"))
             .tradeDate(date(2017, 6, 1))
             .build())
-        .product(expectedSwap3)
+        .product(expectedSwap)
         .build();
-    assertBeanEquals(expected3, filtered.get(2));
+  }
 
-    SwapTrade expected4 = XCcyIborIborSwapConventions.GBP_LIBOR_3M_USD_LIBOR_3M
+  private SwapTrade expectedSwap3() {
+    return XCcyIborIborSwapConventions.GBP_LIBOR_3M_USD_LIBOR_3M
         .createTrade(date(2017, 6, 1), Period.ofMonths(1), Tenor.TENOR_3Y, BUY, 2_000_000, 2_500_000, 0.006, REF_DATA)
         .toBuilder()
         .info(TradeInfo.builder()
@@ -588,15 +667,9 @@ public class TradeCsvLoaderTest {
             .tradeDate(date(2017, 6, 1))
             .build())
         .build();
-    assertBeanEquals(expected4, filtered.get(3));
   }
 
-  public void test_load_swap_full5() {
-    TradeCsvLoader test = TradeCsvLoader.standard();
-    ValueWithFailures<List<SwapTrade>> result = test.parse(ImmutableList.of(FILE.getCharSource()), SwapTrade.class);
-    assertEquals(result.getFailures().size(), 0);
-    assertEquals(result.getValue().size(), NUMBER_SWAPS);
-
+  private SwapTrade expectedSwap4() {
     Swap expectedSwap = Swap.builder()
         .legs(
             RateCalculationSwapLeg.builder()
@@ -632,22 +705,16 @@ public class TradeCsvLoaderTest {
                 .calculation(IborRateCalculation.of(IborIndices.GBP_LIBOR_3M))
                 .build())
         .build();
-    SwapTrade expected = SwapTrade.builder()
+    return SwapTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123415"))
             .tradeDate(date(2017, 6, 1))
             .build())
         .product(expectedSwap)
         .build();
-    assertBeanEquals(expected, result.getValue().get(4));
   }
 
-  public void test_load_swap_full6() {
-    TradeCsvLoader test = TradeCsvLoader.standard();
-    ValueWithFailures<List<SwapTrade>> result = test.parse(ImmutableList.of(FILE.getCharSource()), SwapTrade.class);
-    assertEquals(result.getFailures().size(), 0);
-    assertEquals(result.getValue().size(), NUMBER_SWAPS);
-
+  private SwapTrade expectedSwap5() {
     Swap expectedSwap = Swap.builder()
         .legs(
             RateCalculationSwapLeg.builder()
@@ -684,22 +751,16 @@ public class TradeCsvLoaderTest {
                 .calculation(IborRateCalculation.of(IborIndices.GBP_LIBOR_3M))
                 .build())
         .build();
-    SwapTrade expected = SwapTrade.builder()
+    return SwapTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123416"))
             .tradeDate(date(2017, 6, 1))
             .build())
         .product(expectedSwap)
         .build();
-    assertBeanEquals(expected, result.getValue().get(5));
   }
 
-  public void test_load_swap_full7() {
-    TradeCsvLoader test = TradeCsvLoader.standard();
-    ValueWithFailures<List<SwapTrade>> result = test.parse(ImmutableList.of(FILE.getCharSource()), SwapTrade.class);
-    assertEquals(result.getFailures().size(), 0);
-    assertEquals(result.getValue().size(), NUMBER_SWAPS);
-
+  private SwapTrade expectedSwap6() {
     Swap expectedSwap = Swap.builder()
         .legs(
             RateCalculationSwapLeg.builder()
@@ -735,14 +796,13 @@ public class TradeCsvLoaderTest {
                 .calculation(OvernightRateCalculation.of(OvernightIndices.GBP_SONIA))
                 .build())
         .build();
-    SwapTrade expected = SwapTrade.builder()
+    return SwapTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123417"))
             .tradeDate(date(2017, 6, 1))
             .build())
         .product(expectedSwap)
         .build();
-    assertBeanEquals(expected, result.getValue().get(6));
   }
 
   public void test_load_swap_all() {
@@ -1087,6 +1147,8 @@ public class TradeCsvLoaderTest {
         .product(expectedSwap)
         .build();
     assertBeanEquals(expected, result.getValue().get(0));
+
+    checkRoundtrip(SwapTrade.class, result.getValue(), expected);
   }
 
   public void test_load_swap_defaultFixedLegDayCount() {
@@ -1183,6 +1245,70 @@ public class TradeCsvLoaderTest {
   }
 
   //-------------------------------------------------------------------------
+  public void test_load_swaption() {
+    TradeCsvLoader test = TradeCsvLoader.standard();
+    ValueWithFailures<List<Trade>> trades = test.load(FILE);
+
+    List<SwaptionTrade> filtered = trades.getValue().stream()
+        .flatMap(filtering(SwaptionTrade.class))
+        .collect(toImmutableList());
+    assertEquals(filtered.size(), 3);
+
+    SwaptionTrade expected0 = expectedSwaption0();
+    SwaptionTrade expected1 = expectedSwaption1();
+    SwaptionTrade expected2 = expectedSwaption2();
+
+    assertBeanEquals(expected0, filtered.get(0));
+    assertBeanEquals(expected1, filtered.get(1));
+    assertBeanEquals(expected2, filtered.get(2));
+
+    checkRoundtrip(
+        SwaptionTrade.class, filtered, expected0, expected1, expected2);
+  }
+
+  private SwaptionTrade expectedSwaption0() {
+    SwapTrade swapTrade = expectedSwap0();
+    Swaption swaption = Swaption.builder()
+        .longShort(LongShort.LONG)
+        .swaptionSettlement(CashSwaptionSettlement.of(date(2017, 7, 3), CashSwaptionSettlementMethod.PAR_YIELD))
+        .expiryDate(AdjustableDate.of(date(2017, 6, 30)))
+        .expiryTime(LocalTime.of(11, 0))
+        .expiryZone(ZoneId.of("Europe/London"))
+        .underlying(swapTrade.getProduct())
+        .build();
+    Payment premium = Payment.of(CurrencyAmount.of(GBP, -1000), date(2017, 6, 3));
+    return SwaptionTrade.of(swapTrade.getInfo(), swaption, premium);
+  }
+
+  private SwaptionTrade expectedSwaption1() {
+    SwapTrade swapTrade = expectedSwap1();
+    Swaption swaption = Swaption.builder()
+        .longShort(LongShort.SHORT)
+        .swaptionSettlement(PhysicalSwaptionSettlement.DEFAULT)
+        .expiryDate(AdjustableDate.of(date(2017, 6, 30)))
+        .expiryTime(LocalTime.of(11, 0))
+        .expiryZone(ZoneId.of("Europe/London"))
+        .underlying(swapTrade.getProduct())
+        .build();
+    Payment premium = Payment.of(CurrencyAmount.of(GBP, 1000), date(2017, 6, 3));
+    return SwaptionTrade.of(swapTrade.getInfo(), swaption, premium);
+  }
+
+  private SwaptionTrade expectedSwaption2() {
+    SwapTrade swapTrade = expectedSwap2();
+    Swaption swaption = Swaption.builder()
+        .longShort(LongShort.SHORT)
+        .swaptionSettlement(PhysicalSwaptionSettlement.DEFAULT)
+        .expiryDate(AdjustableDate.of(date(2017, 6, 30)))
+        .expiryTime(LocalTime.of(11, 0))
+        .expiryZone(ZoneId.of("Europe/London"))
+        .underlying(swapTrade.getProduct())
+        .build();
+    Payment premium = Payment.of(CurrencyAmount.of(GBP, 1000), date(2017, 6, 3));
+    return SwaptionTrade.of(swapTrade.getInfo(), swaption, premium);
+  }
+
+  //-------------------------------------------------------------------------
   public void test_load_bulletPayment() {
     TradeCsvLoader test = TradeCsvLoader.standard();
     ResourceLocator locator = ResourceLocator.of("classpath:com/opengamma/strata/loader/csv/fxtrades.csv");
@@ -1215,6 +1341,8 @@ public class TradeCsvLoaderTest {
             .build())
         .build();
     assertBeanEquals(expected1, loadedData.getValue().get(1));
+
+    checkRoundtrip(BulletPaymentTrade.class, loadedData.getValue(), expected0, expected1);
   }
 
   //-------------------------------------------------------------------------
@@ -1227,7 +1355,7 @@ public class TradeCsvLoaderTest {
         .collect(toImmutableList());
     assertEquals(filtered.size(), 3);
 
-    TermDepositTrade expected1 = TermDepositConventions.GBP_SHORT_DEPOSIT_T0
+    TermDepositTrade expected0 = TermDepositConventions.GBP_SHORT_DEPOSIT_T0
         .createTrade(date(2017, 6, 1), Period.ofWeeks(2), SELL, 400_000, 0.002, REF_DATA)
         .toBuilder()
         .info(TradeInfo.builder()
@@ -1235,9 +1363,9 @@ public class TradeCsvLoaderTest {
             .tradeDate(date(2017, 6, 1))
             .build())
         .build();
-    assertBeanEquals(expected1, filtered.get(0));
+    assertBeanEquals(expected0, filtered.get(0));
 
-    TermDepositTrade expected2 = TermDepositConventions.GBP_SHORT_DEPOSIT_T0
+    TermDepositTrade expected1 = TermDepositConventions.GBP_SHORT_DEPOSIT_T0
         .toTrade(date(2017, 6, 1), date(2017, 6, 1), date(2017, 6, 15), SELL, 500_000, 0.0022)
         .toBuilder()
         .info(TradeInfo.builder()
@@ -1245,9 +1373,9 @@ public class TradeCsvLoaderTest {
             .tradeDate(date(2017, 6, 1))
             .build())
         .build();
-    assertBeanEquals(expected2, filtered.get(1));
+    assertBeanEquals(expected1, filtered.get(1));
 
-    TermDepositTrade expected3 = TermDepositTrade.builder()
+    TermDepositTrade expected2 = TermDepositTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123423"))
             .tradeDate(date(2017, 6, 1))
@@ -1263,7 +1391,112 @@ public class TradeCsvLoaderTest {
             .rate(0.0023)
             .build())
         .build();
-    assertBeanEquals(expected3, filtered.get(2));
+    assertBeanEquals(expected2, filtered.get(2));
+
+    checkRoundtrip(TermDepositTrade.class, filtered, expected0, expected1, expected2);
+  }
+
+  //-------------------------------------------------------------------------
+  public void test_load_cds() {
+    TradeCsvLoader test = TradeCsvLoader.standard();
+    ValueWithFailures<List<Trade>> trades = test.load(FILE);
+
+    List<CdsTrade> filtered = trades.getValue().stream()
+        .flatMap(filtering(CdsTrade.class))
+        .collect(toImmutableList());
+    assertEquals(filtered.size(), 4);
+
+    CdsTrade expected0 = expectedCds0();
+    CdsTrade expected1 = expectedCds1();
+    CdsTrade expected2 = expectedCds2();
+    CdsTrade expected3 = expectedCds3();
+
+    assertBeanEquals(expected0, filtered.get(0));
+    assertBeanEquals(expected1, filtered.get(1));
+    assertBeanEquals(expected2, filtered.get(2));
+    assertBeanEquals(expected3, filtered.get(3));
+
+    checkRoundtrip(CdsTrade.class, filtered, expected0, expected1, expected2, expected3);
+  }
+
+  private CdsTrade expectedCds0() {
+    StandardId legEnt = StandardId.of("OG-Entity", "FOO");
+    return CdsConventions.GBP_STANDARD
+        .createTrade(legEnt, date(2017, 6, 1), Tenor.ofYears(5), BUY, 2_000_000, 0.005, REF_DATA)
+        .toBuilder()
+        .info(TradeInfo.builder()
+            .id(StandardId.of("OG", "123441"))
+            .tradeDate(date(2017, 6, 1))
+            .build())
+        .build();
+  }
+
+  private CdsTrade expectedCds1() {
+    StandardId legEnt = StandardId.of("BLUE", "BAR");
+    return CdsConventions.EUR_GB_STANDARD
+        .createTrade(legEnt, date(2017, 6, 1), date(2017, 6, 21), date(2019, 6, 19), SELL, 1_500_000, 0.011, REF_DATA)
+        .toBuilder()
+        .info(TradeInfo.builder()
+            .id(StandardId.of("OG", "123442"))
+            .tradeDate(date(2017, 6, 1))
+            .build())
+        .build();
+  }
+
+  private CdsTrade expectedCds2() {
+    return CdsTrade.builder()
+        .info(TradeInfo.builder()
+            .id(StandardId.of("OG", "123443"))
+            .tradeDate(date(2017, 6, 1))
+            .build())
+        .product(Cds.builder()
+            .buySell(BUY)
+            .legalEntityId(StandardId.of("BLUE", "CAT"))
+            .fixedRate(0.026)
+            .currency(EUR)
+            .notional(1_500_000)
+            .paymentSchedule(PeriodicSchedule.builder()
+                .startDate(date(2017, 6, 21))
+                .endDate(date(2019, 6, 19))
+                .frequency(Frequency.P3M)
+                .stubConvention(StubConvention.SMART_INITIAL)
+                .rollConvention(RollConventions.IMM)
+                .businessDayAdjustment(BusinessDayAdjustment.NONE)
+                .build())
+            .build())
+        .build();
+  }
+
+  private CdsTrade expectedCds3() {
+    return CdsTrade.builder()
+        .info(TradeInfo.builder()
+            .id(StandardId.of("OG", "123444"))
+            .tradeDate(date(2017, 6, 1))
+            .build())
+        .product(Cds.builder()
+            .buySell(BUY)
+            .legalEntityId(StandardId.of("BLUE", "CAT"))
+            .fixedRate(0.026)
+            .currency(EUR)
+            .notional(1_500_000)
+            .dayCount(DayCounts.ACT_365F)
+            .paymentOnDefault(PaymentOnDefault.NONE)
+            .protectionStart(ProtectionStartOfDay.NONE)
+            .paymentSchedule(PeriodicSchedule.builder()
+                .startDate(date(2017, 6, 21))
+                .endDate(date(2019, 6, 19))
+                .frequency(Frequency.P3M)
+                .stubConvention(StubConvention.SMART_FINAL)
+                .rollConvention(RollConventions.IMM)
+                .businessDayAdjustment(BusinessDayAdjustment.of(FOLLOWING, GBLO))
+                .build())
+            .stepinDateOffset(DaysAdjustment.ofBusinessDays(2, GBLO))
+            .settlementDateOffset(DaysAdjustment.ofBusinessDays(2, GBLO))
+            .build())
+        .upfrontFee(
+            AdjustablePayment.of(CurrencyAmount.of(GBP, -1000),
+            AdjustableDate.of(date(2017, 6, 3), BusinessDayAdjustment.of(MODIFIED_FOLLOWING, GBLO))))
+        .build();
   }
 
   //-------------------------------------------------------------------------
@@ -1273,7 +1506,7 @@ public class TradeCsvLoaderTest {
         ImmutableList.of(FILE.getCharSource()), ImmutableList.of(FraTrade.class, TermDepositTrade.class));
 
     assertEquals(trades.getValue().size(), 6);
-    assertEquals(trades.getFailures().size(), 10);
+    assertEquals(trades.getFailures().size(), 17);
     assertEquals(trades.getFailures().get(0).getMessage(),
         "Trade type not allowed " + SwapTrade.class.getName() + ", only these types are supported: FraTrade, TermDepositTrade");
   }
@@ -1316,7 +1549,7 @@ public class TradeCsvLoaderTest {
         .collect(toImmutableList());
     assertEquals(filtered.size(), 2);
 
-    SecurityTrade expected1 = SecurityTrade.builder()
+    SecurityTrade expected0 = SecurityTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123431"))
             .tradeDate(date(2017, 6, 1))
@@ -1326,9 +1559,9 @@ public class TradeCsvLoaderTest {
         .quantity(12)
         .price(14.5)
         .build();
-    assertBeanEquals(expected1, filtered.get(0));
+    assertBeanEquals(expected0, filtered.get(0));
 
-    SecurityTrade expected2 = SecurityTrade.builder()
+    SecurityTrade expected1 = SecurityTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123432"))
             .tradeDate(date(2017, 6, 1))
@@ -1338,7 +1571,9 @@ public class TradeCsvLoaderTest {
         .quantity(-20)
         .price(17.8)
         .build();
-    assertBeanEquals(expected2, filtered.get(1));
+    assertBeanEquals(expected1, filtered.get(1));
+
+    checkRoundtrip(SecurityTrade.class, filtered, expected0, expected1);
   }
 
   public void test_load_genericSecurity() {
@@ -1350,7 +1585,7 @@ public class TradeCsvLoaderTest {
         .collect(toImmutableList());
     assertEquals(filtered.size(), 1);
 
-    GenericSecurityTrade expected1 = GenericSecurityTrade.builder()
+    GenericSecurityTrade expected0 = GenericSecurityTrade.builder()
         .info(TradeInfo.builder()
             .id(StandardId.of("OG", "123433"))
             .tradeDate(date(2017, 6, 1))
@@ -1364,7 +1599,9 @@ public class TradeCsvLoaderTest {
         .quantity(12)
         .price(14.5)
         .build();
-    assertBeanEquals(expected1, filtered.get(0));
+    assertBeanEquals(expected0, filtered.get(0));
+
+    checkRoundtrip(GenericSecurityTrade.class, filtered, expected0);
   }
 
   //-------------------------------------------------------------------------
@@ -1443,12 +1680,34 @@ public class TradeCsvLoaderTest {
   }
 
   //-------------------------------------------------------------------------
+  @SafeVarargs
+  private final <T extends Trade & Bean> void checkRoundtrip(
+      Class<T> type,
+      List<T> loadedTrades,
+      T... expectedTrades) {
+
+    StringBuilder buf = new StringBuilder(1024);
+    TradeCsvWriter.standard().write(loadedTrades, buf);
+    List<CharSource> writtenCsv = ImmutableList.of(CharSource.wrap(buf.toString()));
+    ValueWithFailures<List<T>> roundtrip = TradeCsvLoader.standard().parse(writtenCsv, type);
+    assertEquals(roundtrip.getFailures().size(), 0, roundtrip.getFailures().toString());
+    List<T> roundtripTrades = roundtrip.getValue();
+    assertEquals(roundtripTrades.size(), expectedTrades.length);
+    for (int i = 0; i < roundtripTrades.size(); i++) {
+      assertBeanEquals(expectedTrades[i], roundtripTrades.get(i));
+    }
+  }
+
+  //-------------------------------------------------------------------------
   public void coverage() {
-    coverPrivateConstructor(FraTradeCsvLoader.class);
-    coverPrivateConstructor(SecurityCsvLoader.class);
-    coverPrivateConstructor(SwapTradeCsvLoader.class);
-    coverPrivateConstructor(TermDepositTradeCsvLoader.class);
-    coverPrivateConstructor(FullSwapTradeCsvLoader.class);
+    coverPrivateConstructor(BulletPaymentTradeCsvPlugin.class);
+    coverPrivateConstructor(FraTradeCsvPlugin.class);
+    coverPrivateConstructor(FxSingleTradeCsvPlugin.class);
+    coverPrivateConstructor(FxSwapTradeCsvPlugin.class);
+    coverPrivateConstructor(SecurityCsvPlugin.class);
+    coverPrivateConstructor(SwapTradeCsvPlugin.class);
+    coverPrivateConstructor(TermDepositTradeCsvPlugin.class);
+    coverPrivateConstructor(FullSwapTradeCsvPlugin.class);
   }
 
 }

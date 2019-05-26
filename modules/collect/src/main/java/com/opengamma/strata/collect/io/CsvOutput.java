@@ -5,14 +5,26 @@
  */
 package com.opengamma.strata.collect.io;
 
+import static com.opengamma.strata.collect.Guavate.toImmutableMap;
+import static com.opengamma.strata.collect.Guavate.zipWithIndex;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.joda.beans.JodaBeanUtils;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.opengamma.strata.collect.ArgChecker;
+import com.opengamma.strata.collect.tuple.ObjIntPair;
 
 /**
  * Outputs a CSV formatted file.
@@ -171,6 +183,28 @@ public final class CsvOutput {
     this.safeExpressions = safeExpressions;
   }
 
+  //-------------------------------------------------------------------------
+  /**
+   * Write a header line to the underlying, returning an instance that allows
+   * cells to be written by header name.
+   * <p>
+   * This writes the header line to the underlying.
+   * This is normally called once when the {@code CsvOutput} instance is created
+   * with only the returned instance used to write additional rows.
+   * While it is possible to write rows through both instances, this is likely to get confusing.
+   *
+   * @param headers  the list of headers
+   * @param alwaysQuote  when true, each column will be quoted, when false, quoting is selective
+   * @return the writer to use from now on
+   * @throws UncheckedIOException if an IO exception occurs
+   */
+  public CsvRowOutputWithHeaders withHeaders(List<String> headers, boolean alwaysQuote) {
+    ImmutableMap<String, Integer> headerIndices = zipWithIndex(headers.stream())
+        .collect(toImmutableMap(ObjIntPair::getFirst, ObjIntPair::getSecond));
+    writeLine(headers, alwaysQuote);
+    return new CsvRowOutputWithHeaders(ImmutableList.copyOf(headers), headerIndices, alwaysQuote);
+  }
+
   //------------------------------------------------------------------------
   /**
    * Writes multiple CSV lines to the underlying.
@@ -320,4 +354,169 @@ public final class CsvOutput {
     underlying.append('"');
   }
 
+  //-------------------------------------------------------------------------
+  /**
+   * Class used when outputting CSV with headers.
+   */
+  public class CsvRowOutputWithHeaders {
+    private final ImmutableList<String> headers;
+    private final ImmutableMap<String, Integer> headerIndices;
+    private final boolean alwaysQuote;
+    private final List<String> mutableValueList;
+
+    private CsvRowOutputWithHeaders(
+        ImmutableList<String> headers,
+        ImmutableMap<String, Integer> headerIndices,
+        boolean alwaysQuote) {
+
+      this.headers = headers;
+      this.headerIndices = headerIndices;
+      this.alwaysQuote = alwaysQuote;
+      this.mutableValueList = new ArrayList<>(Collections.nCopies(headerIndices.size(), ""));
+    }
+
+    /**
+     * Gets the list of headers that are in use.
+     * <p>
+     * This is the same list that was passed into {@link CsvOutput#withHeaders(List, boolean)}.
+     *
+     * @return the list of headers
+     */
+    public ImmutableList<String> headers() {
+      return headers;
+    }
+
+    /**
+     * Writes a row to the output, specifying each value by the header.
+     * <p>
+     * The header must exactly match the header passed into the constructor of this instance.
+     * An exception is thrown if the header is not known.
+     * <p>
+     * This method is equivalent to multiple calls to {@link #writeCell(String, String)}
+     * followed by one call to {@link #writeNewLine()}.
+     *
+     * @param valueMap  the map of values to write keyed by header
+     * @return this, for method chaining
+     * @throws IllegalArgumentException if one of the headers does not match
+     * @throws UncheckedIOException if an IO exception occurs
+     */
+    public CsvRowOutputWithHeaders writeLine(Map<String, String> valueMap) {
+      return writeCells(valueMap).writeNewLine();
+    }
+
+    /**
+     * Writes a map of cells to the output, with the cell only being output when {@code writeNewLine()} is called.
+     * <p>
+     * The header must exactly match the header passed into the constructor of this instance.
+     * An exception is thrown if the header is not known.
+     * <p>
+     * This method is equivalent to multiple calls to {@link #writeCell(String, String)}.
+     * <p>
+     * Note that if {@link #writeNewLine()} is not called, the cell will never be output.
+     *
+     * @param valueMap  the map of values to write keyed by header
+     * @return this, for method chaining
+     * @throws IllegalArgumentException if one of the headers does not match
+     * @throws UncheckedIOException if an IO exception occurs
+     */
+    public CsvRowOutputWithHeaders writeCells(Map<String, String> valueMap) {
+      valueMap.forEach(this::writeCell);
+      return this;
+    }
+
+    /**
+     * Writes a single cell by header, with the cell only being output when {@code writeNewLine()} is called.
+     * <p>
+     * The header must exactly match the header passed into the constructor of this instance.
+     * An exception is thrown if the header is not known.
+     * <p>
+     * Note that if {@link #writeNewLine()} is not called, the cell will never be output.
+     *
+     * @param header  the header to write
+     * @param value  the value to write
+     * @return this, for method chaining
+     * @throws IllegalArgumentException if one of the headers does not match
+     * @throws UncheckedIOException if an IO exception occurs
+     */
+    public CsvRowOutputWithHeaders writeCell(String header, String value) {
+      Integer index = headerIndices.get(header);
+      if (index == null) {
+        throw new IllegalArgumentException("Unknown header: " + header);
+      }
+      mutableValueList.set(index, value);
+      return this;
+    }
+
+    /**
+     * Writes a single cell by header, with the cell only being output when {@code writeNewLine()} is called.
+     * <p>
+     * The header must exactly match the header passed into the constructor of this instance.
+     * An exception is thrown if the header is not known.
+     * <p>
+     * Note that if {@link #writeNewLine()} is not called, the cell will never be output.
+     *
+     * @param header  the header to write
+     * @param value  the value to write
+     * @return this, for method chaining
+     * @throws IllegalArgumentException if one of the headers does not match
+     * @throws UncheckedIOException if an IO exception occurs
+     */
+    public CsvRowOutputWithHeaders writeCell(String header, Object value) {
+      if (value instanceof Double) {
+        return writeCell(header, ((Double) value).doubleValue());
+      } else if (value instanceof Float) {
+        return writeCell(header, ((Float) value).doubleValue());
+      }
+      return writeCell(header, JodaBeanUtils.stringConverter().convertToString(value));
+    }
+
+    /**
+     * Writes a single cell by header, with the cell only being output when {@code writeNewLine()} is called.
+     * <p>
+     * The header must exactly match the header passed into the constructor of this instance.
+     * An exception is thrown if the header is not known.
+     * <p>
+     * Note that if {@link #writeNewLine()} is not called, the cell will never be output.
+     *
+     * @param header  the header to write
+     * @param value  the value to write
+     * @return this, for method chaining
+     * @throws IllegalArgumentException if one of the headers does not match
+     * @throws UncheckedIOException if an IO exception occurs
+     */
+    public CsvRowOutputWithHeaders writeCell(String header, double value) {
+      String str = BigDecimal.valueOf(value).toPlainString();
+      return writeCell(header, str.endsWith(".0") ? str.substring(0, str.length() - 2) : str);
+    }
+
+    /**
+     * Writes a single cell by header, with the cell only being output when {@code writeNewLine()} is called.
+     * <p>
+     * The header must exactly match the header passed into the constructor of this instance.
+     * An exception is thrown if the header is not known.
+     * <p>
+     * Note that if {@link #writeNewLine()} is not called, the cell will never be output.
+     *
+     * @param header  the header to write
+     * @param value  the value to write
+     * @return this, for method chaining
+     * @throws IllegalArgumentException if one of the headers does not match
+     * @throws UncheckedIOException if an IO exception occurs
+     */
+    public CsvRowOutputWithHeaders writeCell(String header, long value) {
+      return writeCell(header, Long.valueOf(value));
+    }
+
+    /**
+     * Writes a new line character.
+     *
+     * @return this, for method chaining
+     * @throws UncheckedIOException if an IO exception occurs
+     */
+    public CsvRowOutputWithHeaders writeNewLine() {
+      CsvOutput.this.writeLine(mutableValueList, alwaysQuote);
+      mutableValueList.replaceAll(current -> "");
+      return this;
+    }
+  }
 }

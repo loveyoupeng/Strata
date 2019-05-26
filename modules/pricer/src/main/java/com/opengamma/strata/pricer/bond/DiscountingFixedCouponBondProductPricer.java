@@ -843,7 +843,7 @@ public class DiscountingFixedCouponBondProductPricer {
 
     double total = 0d;
     for (FixedCouponBondPaymentPeriod period : bond.getPeriodicPayments()) {
-      if (period.getDetachmentDate().isAfter(referenceDate)) {
+      if (!period.getDetachmentDate().isBefore(referenceDate)) {
         total += periodPricer.presentValueWithSpread(period, discountFactors, zSpread, compoundedRateType, periodsPerYear);
       }
     }

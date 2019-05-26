@@ -69,6 +69,38 @@ public class GuavateTest {
   }
 
   //-------------------------------------------------------------------------
+  public void test_combineMap() {
+    Map<String, String> map1 = ImmutableMap.of("a", "one", "b", "two");
+    Map<String, String> map2 = ImmutableMap.of("c", "three", "d", "four");
+    Map<String, String> test = Guavate.combineMaps(map1, map2);
+    assertEquals(test, ImmutableMap.of("a", "one", "b", "two", "c", "three", "d", "four"));
+  }
+
+  public void test_combineMap_differentTypes() {
+    Map<String, Integer> map1 = ImmutableMap.of("a", 1, "b", 2);
+    Map<String, Double> map2 = ImmutableMap.of("c", 3d, "d", 4d);
+    Map<String, Number> test = Guavate.combineMaps(map1, map2);
+    assertEquals(test, ImmutableMap.of("a", 1, "b", 2, "c", 3d, "d", 4d));
+  }
+
+  public void test_combineMap_merge() {
+    Map<String, Integer> map1 = ImmutableMap.of("a", 1, "b", 2);
+    Map<String, Integer> map2 = ImmutableMap.of("a", 5, "c", 3);
+    Map<String, Integer> test = Guavate.combineMaps(map1, map2, Integer::sum);
+    assertEquals(test, ImmutableMap.of("a", 6, "b", 2, "c", 3));
+  }
+
+  public void test_combineMap_mergeDifferentTypes() {
+    Map<String, Integer> map1 = ImmutableMap.of("a", 1, "b", 2);
+    Map<String, Double> map2 = ImmutableMap.of("a", 5d, "c", 3d);
+    Map<String, Number> test = Guavate.combineMaps(
+        map1,
+        map2,
+        (a, b) -> Double.sum(a.doubleValue(), b.doubleValue()));
+    assertEquals(test, ImmutableMap.of("a", 6d, "b", 2, "c", 3d));
+  }
+
+  //-------------------------------------------------------------------------
   public void test_firstNonEmpty_supplierMatch1() {
     Optional<Number> test = Guavate.firstNonEmpty(
         () -> Optional.of(Integer.valueOf(1)),
@@ -369,6 +401,19 @@ public class GuavateTest {
             .stream()
             .filter(e -> e.getValue() % 2 == 1)
             .collect(entriesToImmutableMap());
+    assertEquals(output, expected);
+  }
+
+  public void test_mapEntriesToImmutableMap_mergeFn() {
+    Map<Integer, String> input = ImmutableMap.of(1, "a", 2, "b", 3, "c", 4, "d", 5, "e");
+    Map<Integer, String> expected = ImmutableMap.of(0, "bd", 1, "ace");
+
+    ImmutableMap<Integer, String> output =
+        input.entrySet()
+            .stream()
+            .map(e -> Guavate.entry(e.getKey() % 2, e.getValue()))
+            .collect(entriesToImmutableMap(String::concat));
+
     assertEquals(output, expected);
   }
 

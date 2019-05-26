@@ -8,12 +8,12 @@
   <parent>
     <groupId>com.opengamma</groupId>
     <artifactId>corporate-parent</artifactId>
-    <version>2.6.3</version>
+    <version>2.6.4</version>
     <relativePath></relativePath>
   </parent>  
   <groupId>com.opengamma.strata</groupId>
   <artifactId>strata-root</artifactId>
-  <version>2.2.2-SNAPSHOT</version>
+  <version>2.3.3-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Strata-Root</name>
   <description>OpenGamma Strata root</description>
@@ -21,7 +21,7 @@
   <!-- ==================================================================== -->
   <licenses>
     <license>
-      <name>The Apache Software License, Version 2.0</name>
+      <name>Apache License, Version 2.0</name>
       <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
       <distribution>repo</distribution>
     </license>
