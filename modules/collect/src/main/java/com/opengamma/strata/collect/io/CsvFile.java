@@ -5,6 +5,8 @@
  */
 package com.opengamma.strata.collect.io;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
@@ -13,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharSource;
@@ -152,7 +155,7 @@ public final class CsvFile {
   private static CsvFile create(List<String> lines, boolean headerRow, char separator) {
     if (headerRow) {
       for (int i = 0; i < lines.size(); i++) {
-        ImmutableList<String> headers = parseLine(lines.get(i), i + 1, separator);
+        ImmutableList<String> headers = parseLine(lines.get(i), separator);
         if (!headers.isEmpty()) {
           ImmutableMap<String, Integer> searchHeaders = buildSearchHeaders(headers);
           return parseAll(lines, i + 1, separator, headers, searchHeaders);
@@ -161,6 +164,118 @@ public final class CsvFile {
       throw new IllegalArgumentException("Could not read header row from empty CSV file");
     }
     return parseAll(lines, 0, separator, ImmutableList.of(), ImmutableMap.of());
+  }
+
+  //-------------------------------------------------------------------------
+  /**
+   * Finds the separator used by the specified CSV file.
+   * <p>
+   * The search includes comma, semicolon, colon, tab and pipe (in that order of priority).
+   * <p>
+   * The algorithm operates in a number of steps.
+   * Firstly, it looks for occurrences where a separator is followed by valid quoted text.
+   * If this matches, the separator is assumed to be correct.
+   * Secondly, it looks for lines that only consist of a separator.
+   * If this matches, the separator is assumed to be correct.
+   * Thirdly, it looks to see which separator is the most common on the line.
+   * If that separator is also the most common on the next line, and the number of columns matches,
+   * the separator is assumed to be correct. Otherwise another line is processed.
+   * Thus to match a separator, there must be two lines with the same number of columns.
+   * At most, 100 content lines are read from the file.
+   * The default is comma if the file is empty.
+   * 
+   * @param source  the source to read as CSV
+   * @return the CSV file
+   * @throws UncheckedIOException if an IO exception occurs
+   * @throws IllegalArgumentException if the file cannot be parsed
+   */
+  public static char findSeparator(CharSource source) {
+    String possibleSeparators = ",;\t:|";
+    try (BufferedReader breader = source.openBufferedStream()) {
+      int bestCount = 0;
+      char bestSeparator = ',';
+      String line = breader.readLine();
+      int contentLines = 0;
+      while (line != null && contentLines <= 100) {
+        if (line.length() == 0 || line.startsWith("#")) {
+          // comment
+        } else if (line.startsWith(";") && bestCount == 0 && bestSeparator == ',') {
+          // if we see semicolon it could be a start of comment or a semicolon separator
+          bestSeparator = ';';
+        } else {
+          line = simplifyLine(line);
+          int lineBestCount = 0;
+          char lineBestSeparator = ',';
+          for (char separator : possibleSeparators.toCharArray()) {
+            // a quote following a separator is a strong marker for the separator
+            if (line.contains(separator + "\"\"")) {
+              return separator;
+            }
+            // a line only formed of separators is a strong marker for the separator
+            if (line.length() > 1 && line.equals(Strings.repeat(Character.toString(separator), line.length()))) {
+              return separator;
+            }
+            // a minimal line of a separator is a weak marker for the separator
+            if (line.length() == 1 && line.charAt(0) == separator && bestCount == 0 && bestSeparator == ',') {
+              bestCount = 1;
+              bestSeparator = separator;
+            }
+            // parse the row and see if it is the best match
+            if (line.length() > 1) {
+              int count = CsvFile.parseLine(line, separator).size();
+              if (count > lineBestCount) {
+                lineBestCount = count;
+                lineBestSeparator = separator;
+              }
+            }
+          }
+          if (lineBestCount > 0) {
+            contentLines++;
+            if (bestCount > 0 && bestCount == lineBestCount && bestSeparator == lineBestSeparator) {
+              break;
+            }
+            bestCount = lineBestCount;
+            bestSeparator = lineBestSeparator;
+          }
+        }
+        line = breader.readLine();
+      }
+      return bestSeparator;
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+  }
+
+  // simplifies a line, removing quoted sections (which assumes the input is validly quoted)
+  private static String simplifyLine(String line) {
+    int pos = 0;
+    boolean quoteMode = false;
+    StringBuilder buf = new StringBuilder(line.length());
+    while (pos < line.length()) {
+      char ch = line.charAt(pos++);
+      if (quoteMode) {
+        // currently in quote mode
+        if (ch == '"' && pos < line.length() - 1 && line.charAt(pos) == '"') {
+          // two double quotes treated as a normal character, as thus skipped
+          pos++;
+        } else if (ch == '"' || pos == line.length()) {
+          // end of quoted section, or end of string with quote not terminated properly
+          buf.append('"').append('"');
+          quoteMode = false;
+        } else {
+          // skip characters in quotes
+        }
+      } else if (ch == '"') {
+        // quoted mode
+        quoteMode = true;
+      } else if (ch == ' ' || ch == '=') {
+        // ignore awkward characters
+      } else {
+        // append all other characters
+        buf.append(ch);
+      }
+    }
+    return buf.toString();
   }
 
   //------------------------------------------------------------------------
@@ -203,7 +318,7 @@ public final class CsvFile {
 
     ImmutableList.Builder<CsvRow> rows = ImmutableList.builder();
     for (int i = lineIndex; i < lines.size(); i++) {
-      ImmutableList<String> fields = parseLine(lines.get(i), i + 1, separator);
+      ImmutableList<String> fields = parseLine(lines.get(i), separator);
       if (!fields.isEmpty()) {
         rows.add(new CsvRow(headers, searchHeaders, i + 1, fields));
       }
@@ -212,40 +327,61 @@ public final class CsvFile {
   }
 
   // parse a single line
-  static ImmutableList<String> parseLine(String line, int lineNumber, char separator) {
-    if (line.length() == 0 || line.startsWith("#") || line.startsWith(";")) {
+  static ImmutableList<String> parseLine(String line, char separator) {
+    if (line.length() == 0 || line.startsWith("#") || (line.startsWith(";") && separator != ';')) {
       return ImmutableList.of();
     }
     ImmutableList.Builder<String> builder = ImmutableList.builder();
-    int start = 0;
     String terminated = line + separator;
-    int nextSeparator = terminated.indexOf(separator, start);
-    while (nextSeparator >= 0) {
-      String possible = terminated.substring(start, nextSeparator).trim();
-      // handle convention where ="xxx" means xxx
-      if (possible.startsWith("=\"")) {
-        start++;
-        possible = possible.substring(1);
-      }
-      // handle quoting where "xxx""yyy" means xxx"yyy
-      if (possible.startsWith("\"")) {
-        while (true) {
-          if (possible.substring(1).replace("\"\"", "").endsWith("\"")) {
-            possible = possible.substring(1, possible.length() - 1).replace("\"\"", "\"");
-            break;
-          } else {
-            nextSeparator = terminated.indexOf(separator, nextSeparator + 1);
-            if (nextSeparator < 0) {
-              throw new IllegalArgumentException("Mismatched quotes in CSV on line " + lineNumber);
-            }
-            possible = terminated.substring(start, nextSeparator).trim();
-          }
+    // three modes of parsing - base, value and quote
+    // to match other lenient parsers, when quote mode finishes, the mode switches to value with the result combined
+    int pos = 0;
+    int startPos = 0;
+    String value = "";
+    boolean valueMode = false;
+    boolean quoteMode = false;
+    while (pos < terminated.length()) {
+      char ch = terminated.charAt(pos++);
+      if (quoteMode) {
+        // currently in quote mode
+        if (ch == '"' && pos < terminated.length() - 1 && terminated.charAt(pos) == '"') {
+          // two double quotes will become one
+          pos++;
+        } else if (ch == '"') {
+          // end of quoted section
+          value = terminated.substring(startPos, pos - 1).replace("\"\"", "\"");
+          startPos = pos;
+          quoteMode = false;
+        } else if (pos == terminated.length()) {
+          // end of string with quote not terminated properly
+          builder.add(terminated.substring(startPos, pos - 1).replace("\"\"", "\""));
         }
+      } else if (valueMode) {
+        // currently in value mode
+        if (ch == separator) {
+          builder.add(value + terminated.substring(startPos, pos - 1).trim());
+          valueMode = false;
+          value = "";
+        }
+      } else if (ch == separator) {
+        // handle empty value
+        builder.add("");
+      } else if (ch == ' ') {
+        // ignore spaces after separators
+      } else if (ch == '=' && pos < terminated.length() - 1 && terminated.charAt(pos) == '"') {
+        // handle convention where ="xxx" means xxx by simply ignoring the equals
+      } else if (ch == '"') {
+        // quoted mode
+        startPos = pos;
+        quoteMode = true;
+        valueMode = true;
+      } else {
+        // non-quoted mode
+        startPos = pos - 1;
+        valueMode = true;
       }
-      builder.add(possible);
-      start = nextSeparator + 1;
-      nextSeparator = terminated.indexOf(separator, start);
     }
+    // check line has content
     ImmutableList<String> fields = builder.build();
     if (!hasContent(fields)) {
       return ImmutableList.of();
