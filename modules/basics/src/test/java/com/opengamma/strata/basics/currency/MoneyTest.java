@@ -5,15 +5,17 @@
  */
 package com.opengamma.strata.basics.currency;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
+/**
+ * Test {@link Money}.
+ */
 public class MoneyTest {
 
   private static final Currency CCY_AUD = Currency.AUD;
@@ -33,83 +35,86 @@ public class MoneyTest {
 
   @Test
   public void testOfCurrencyAndAmount() throws Exception {
-    assertEquals(MONEY_100_AUD.getCurrency(), CCY_AUD);
-    assertEquals(MONEY_100_AUD.getAmount(), new BigDecimal(AMT_100_12).setScale(2, RoundingMode.HALF_UP));
-    assertEquals(MONEY_100_13_AUD.getCurrency(), CCY_AUD);
-    assertEquals(MONEY_100_13_AUD.getAmount(), BigDecimal.valueOf(AMT_100_12).setScale(2, RoundingMode.HALF_UP)); //Testing the rounding from 3 to 2 decimals
-    assertEquals(MONEY_100_12_BHD.getCurrency(), CCY_BHD);
-    assertEquals(MONEY_100_12_BHD.getAmount(), BigDecimal.valueOf(AMT_100_12).setScale(3, RoundingMode.HALF_UP));
-    assertEquals(MONEY_100_125_BHD.getCurrency(), CCY_BHD);
-    assertEquals(MONEY_100_125_BHD.getAmount(), BigDecimal.valueOf(100.125)); //Testing the rounding from 4 to 3 decimals
+    assertThat(MONEY_100_AUD.getCurrency()).isEqualTo(CCY_AUD);
+    assertThat(MONEY_100_AUD.getAmount()).isEqualTo(new BigDecimal(AMT_100_12).setScale(2, RoundingMode.HALF_UP));
+    assertThat(MONEY_100_13_AUD.getCurrency()).isEqualTo(CCY_AUD);
+    assertThat(MONEY_100_13_AUD.getAmount()).isEqualTo(BigDecimal.valueOf(AMT_100_12).setScale(2, RoundingMode.HALF_UP)); //Testing the rounding from 3 to 2 decimals
+    assertThat(MONEY_100_12_BHD.getCurrency()).isEqualTo(CCY_BHD);
+    assertThat(MONEY_100_12_BHD.getAmount()).isEqualTo(BigDecimal.valueOf(AMT_100_12).setScale(3, RoundingMode.HALF_UP));
+    assertThat(MONEY_100_125_BHD.getCurrency()).isEqualTo(CCY_BHD);
+    assertThat(MONEY_100_125_BHD.getAmount()).isEqualTo(BigDecimal.valueOf(100.125)); //Testing the rounding from 4 to 3 decimals
 
   }
 
   @Test
   public void testOfCurrencyAmount() throws Exception {
-    assertEquals(MONEY_200_RON.getCurrency(), CCY_RON);
-    assertEquals(MONEY_200_RON.getAmount(), new BigDecimal(AMT_200_23).setScale(2, RoundingMode.HALF_EVEN));
+    assertThat(MONEY_200_RON.getCurrency()).isEqualTo(CCY_RON);
+    assertThat(MONEY_200_RON.getAmount()).isEqualTo(new BigDecimal(AMT_200_23).setScale(2, RoundingMode.HALF_EVEN));
   }
 
   @Test
   public void testConvertedToWithExplicitRate() throws Exception {
-    assertEquals(Money.of(Currency.RON, 200.23), MONEY_200_RON.convertedTo(CCY_RON, BigDecimal.valueOf(1)));
-    assertEquals(Money.of(Currency.RON, 260.31), MONEY_100_AUD.convertedTo(CCY_RON, BigDecimal.valueOf(2.6d)));
+    assertThat(Money.of(Currency.RON, 200.23)).isEqualTo(MONEY_200_RON.convertedTo(CCY_RON, BigDecimal.valueOf(1)));
+    assertThat(Money.of(Currency.RON, 260.31)).isEqualTo(MONEY_100_AUD.convertedTo(CCY_RON, BigDecimal.valueOf(2.6d)));
   }
 
-  @Test(expectedExceptions = IllegalArgumentException.class,
-      expectedExceptionsMessageRegExp = "FX rate must be 1 when no conversion required")
+  @Test
   public void testConvertedToWithExplicitRateForSameCurrency() throws Exception {
-    assertEquals(Money.of(Currency.RON, 200.23), MONEY_200_RON.convertedTo(CCY_RON, BigDecimal.valueOf(1.1)));
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> MONEY_200_RON.convertedTo(CCY_RON, BigDecimal.valueOf(1.1)))
+        .withMessage("FX rate must be 1 when no conversion required");
   }
 
   @Test
   public void testConvertedToWithRateProvider() throws Exception {
     FxRateProvider provider = (ccy1, ccy2) -> 2.5d;
-    assertEquals(Money.of(Currency.RON, 250.30), MONEY_100_AUD.convertedTo(CCY_RON, provider));
-    assertEquals(Money.of(Currency.RON, 200.23), MONEY_200_RON.convertedTo(CCY_RON, provider));
+    assertThat(Money.of(Currency.RON, 250.30)).isEqualTo(MONEY_100_AUD.convertedTo(CCY_RON, provider));
+    assertThat(Money.of(Currency.RON, 200.23)).isEqualTo(MONEY_200_RON.convertedTo(CCY_RON, provider));
   }
 
   @Test
   public void testCompareTo() throws Exception {
-    assertEquals(-1, MONEY_100_AUD.compareTo(MONEY_200_RON));
-    assertEquals(0, MONEY_200_RON.compareTo(MONEY_200_RON_ALTERNATIVE));
+    assertThat(-1).isEqualTo(MONEY_100_AUD.compareTo(MONEY_200_RON));
+    assertThat(0).isEqualTo(MONEY_200_RON.compareTo(MONEY_200_RON_ALTERNATIVE));
   }
 
   @Test
   public void testEquals() throws Exception {
-    assertTrue(MONEY_200_RON.equals(MONEY_200_RON));
-    assertFalse(MONEY_200_RON.equals(null));
-    assertTrue(MONEY_200_RON.equals(MONEY_200_RON_ALTERNATIVE));
-    assertFalse(MONEY_100_AUD.equals(MONEY_200_RON));
+    assertThat(MONEY_200_RON.equals(MONEY_200_RON)).isTrue();
+    assertThat(MONEY_200_RON.equals(null)).isFalse();
+    assertThat(MONEY_200_RON.equals(MONEY_200_RON_ALTERNATIVE)).isTrue();
+    assertThat(MONEY_100_AUD.equals(MONEY_200_RON)).isFalse();
   }
 
   @Test
   public void testHashCode() throws Exception {
-    assertTrue(MONEY_200_RON.hashCode() == MONEY_200_RON_ALTERNATIVE.hashCode());
-    assertFalse(MONEY_200_RON.hashCode() == MONEY_100_AUD.hashCode());
+    assertThat(MONEY_200_RON.hashCode() == MONEY_200_RON_ALTERNATIVE.hashCode()).isTrue();
+    assertThat(MONEY_200_RON.hashCode() == MONEY_100_AUD.hashCode()).isFalse();
   }
 
   @Test
   public void testToString() throws Exception {
-    assertEquals("RON 200.23", MONEY_200_RON.toString());
+    assertThat("RON 200.23").isEqualTo(MONEY_200_RON.toString());
   }
 
   @Test
   public void testParse() throws Exception {
-    assertEquals(Money.parse("RON 200.23"), MONEY_200_RON);
-    assertEquals(Money.parse("RON 200.2345"), MONEY_200_RON);
+    assertThat(Money.parse("RON 200.23")).isEqualTo(MONEY_200_RON);
+    assertThat(Money.parse("RON 200.2345")).isEqualTo(MONEY_200_RON);
   }
 
-  @Test(expectedExceptions = IllegalArgumentException.class,
-      expectedExceptionsMessageRegExp = "Unable to parse amount: 200.23 RON")
+  @Test
   public void testParseWrongFormat() throws Exception {
-    Money.parse("200.23 RON");
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> Money.parse("200.23 RON"))
+        .withMessage("Unable to parse amount: 200.23 RON");
   }
 
-  @Test(expectedExceptions = IllegalArgumentException.class,
-      expectedExceptionsMessageRegExp = "Unable to parse amount, invalid format: [$]100")
+  @Test
   public void testParseWrongElementsNumber() throws Exception {
-    Money.parse("$100");
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> Money.parse("$100"))
+        .withMessageMatching("Unable to parse amount, invalid format: [$]100");
   }
 
 }

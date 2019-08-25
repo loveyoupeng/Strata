@@ -7,8 +7,8 @@ package com.opengamma.strata.product.common;
 
 import static com.opengamma.strata.collect.TestHelper.assertJodaConvert;
 import static com.opengamma.strata.collect.TestHelper.assertSerialization;
-import static com.opengamma.strata.collect.TestHelper.assertThrowsIllegalArg;
 import static com.opengamma.strata.collect.TestHelper.coverEnum;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.testng.Assert.assertEquals;
 
 import java.util.Locale;
@@ -43,6 +43,11 @@ public class LongShortTest {
     assertEquals(LongShort.SHORT.sign(), -1);
   }
 
+  public void test_opposite() {
+    assertEquals(LongShort.LONG.opposite(), LongShort.SHORT);
+    assertEquals(LongShort.SHORT.opposite(), LongShort.LONG);
+  }
+
   //-------------------------------------------------------------------------
   @DataProvider(name = "name")
   public static Object[][] data_name() {
@@ -73,11 +78,13 @@ public class LongShortTest {
   }
 
   public void test_of_lookup_notFound() {
-    assertThrowsIllegalArg(() -> LongShort.of("Rubbish"));
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> LongShort.of("Rubbish"));
   }
 
   public void test_of_lookup_null() {
-    assertThrowsIllegalArg(() -> LongShort.of(null));
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> LongShort.of(null));
   }
 
   //-------------------------------------------------------------------------

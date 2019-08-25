@@ -8,8 +8,8 @@ package com.opengamma.strata.product.common;
 import static com.opengamma.strata.basics.currency.Currency.GBP;
 import static com.opengamma.strata.collect.TestHelper.assertJodaConvert;
 import static com.opengamma.strata.collect.TestHelper.assertSerialization;
-import static com.opengamma.strata.collect.TestHelper.assertThrowsIllegalArg;
 import static com.opengamma.strata.collect.TestHelper.coverEnum;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.testng.Assert.assertEquals;
 
 import java.util.Locale;
@@ -76,6 +76,11 @@ public class PayReceiveTest {
     assertEquals(PayReceive.RECEIVE.isReceive(), true);
   }
 
+  public void test_opposite() {
+    assertEquals(PayReceive.PAY.opposite(), PayReceive.RECEIVE);
+    assertEquals(PayReceive.RECEIVE.opposite(), PayReceive.PAY);
+  }
+
   //-------------------------------------------------------------------------
   @DataProvider(name = "name")
   public static Object[][] data_name() {
@@ -106,11 +111,13 @@ public class PayReceiveTest {
   }
 
   public void test_of_lookup_notFound() {
-    assertThrowsIllegalArg(() -> PayReceive.of("Rubbish"));
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> PayReceive.of("Rubbish"));
   }
 
   public void test_of_lookup_null() {
-    assertThrowsIllegalArg(() -> PayReceive.of(null));
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> PayReceive.of(null));
   }
 
   //-------------------------------------------------------------------------

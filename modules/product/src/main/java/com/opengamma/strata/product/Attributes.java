@@ -8,6 +8,7 @@ package com.opengamma.strata.product;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.collect.Messages;
 
 /**
@@ -28,10 +29,10 @@ public interface Attributes {
   }
 
   /**
-   * Obtains an empty instance.
+   * Obtains an instance with a single attribute.
    * <p>
    * The {@link #withAttribute(AttributeType, Object)} method can be used on
-   * the instance to add attributes.
+   * the instance to add more attributes.
    * 
    * @param <T>  the type of the attribute value
    * @param type  the type providing meaning to the value
@@ -39,10 +40,23 @@ public interface Attributes {
    * @return the instance
    */
   public static <T> Attributes of(AttributeType<T> type, T value) {
-    return new SimpleAttributes(ImmutableMap.of(type, value));
+    return new SimpleAttributes(ImmutableMap.of(type, type.toStoredForm(value)));
   }
 
   //-------------------------------------------------------------------------
+  /**
+   * Gets the attribute types that are available.
+   * <p>
+   * See {@link AttributeType#captureWildcard()} for a way to capture the wildcard type.
+   * <p>
+   * The default implementation returns an empty set (backwards compatibility prevents an abstract method for now).
+   * 
+   * @return the attribute types
+   */
+  public default ImmutableSet<AttributeType<?>> getAttributeTypes() {
+    return ImmutableSet.of(); // TODO: Remove default in Strata v3
+  }
+
   /**
    * Gets the attribute associated with the specified type.
    * <p>
@@ -59,6 +73,17 @@ public interface Attributes {
   public default <T> T getAttribute(AttributeType<T> type) {
     return findAttribute(type).orElseThrow(() -> new IllegalArgumentException(
         Messages.format("Attribute not found for type '{}'", type)));
+  }
+
+  /**
+   * Determines if an attribute associated with the specified type is present.
+   *
+   * @param <T>  the type of the attribute value
+   * @param type  the type to find
+   * @return true if a matching attribute is present
+   */
+  public default <T> boolean containsAttribute(AttributeType<T> type) {
+    return findAttribute(type).isPresent();
   }
 
   /**

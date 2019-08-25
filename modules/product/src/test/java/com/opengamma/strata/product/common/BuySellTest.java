@@ -8,8 +8,8 @@ package com.opengamma.strata.product.common;
 import static com.opengamma.strata.basics.currency.Currency.GBP;
 import static com.opengamma.strata.collect.TestHelper.assertJodaConvert;
 import static com.opengamma.strata.collect.TestHelper.assertSerialization;
-import static com.opengamma.strata.collect.TestHelper.assertThrowsIllegalArg;
 import static com.opengamma.strata.collect.TestHelper.coverEnum;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.testng.Assert.assertEquals;
 
 import java.util.Locale;
@@ -68,6 +68,11 @@ public class BuySellTest {
     assertEquals(BuySell.SELL.isSell(), true);
   }
 
+  public void test_opposite() {
+    assertEquals(BuySell.BUY.opposite(), BuySell.SELL);
+    assertEquals(BuySell.SELL.opposite(), BuySell.BUY);
+  }
+
   //-------------------------------------------------------------------------
   @DataProvider(name = "name")
   public static Object[][] data_name() {
@@ -98,11 +103,13 @@ public class BuySellTest {
   }
 
   public void test_of_lookup_notFound() {
-    assertThrowsIllegalArg(() -> BuySell.of("Rubbish"));
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> BuySell.of("Rubbish"));
   }
 
   public void test_of_lookup_null() {
-    assertThrowsIllegalArg(() -> BuySell.of(null));
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> BuySell.of(null));
   }
 
   //-------------------------------------------------------------------------

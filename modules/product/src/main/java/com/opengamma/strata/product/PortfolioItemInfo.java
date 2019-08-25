@@ -7,6 +7,7 @@ package com.opengamma.strata.product;
 
 import java.util.Optional;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.basics.StandardId;
 
@@ -31,6 +32,21 @@ public interface PortfolioItemInfo extends Attributes {
    */
   public static PortfolioItemInfo empty() {
     return ItemInfo.empty();
+  }
+
+  /**
+   * Obtains an instance with a single attribute.
+   * <p>
+   * The {@link #withAttribute(AttributeType, Object)} method can be used on
+   * the instance to add more attributes.
+   * 
+   * @param <T>  the type of the attribute value
+   * @param type  the type providing meaning to the value
+   * @param value  the value
+   * @return the instance
+   */
+  public static <T> PortfolioItemInfo of(AttributeType<T> type, T value) {
+    return new ItemInfo(null, ImmutableMap.of(type, type.toStoredForm(value)));
   }
 
   //-------------------------------------------------------------------------
@@ -60,14 +76,32 @@ public interface PortfolioItemInfo extends Attributes {
    */
   public abstract PortfolioItemInfo withId(StandardId identifier);
 
-  /**
-   * Gets the attribute types that the info contains.
-   * 
-   * @return the attribute types
-   */
+  @Override
   public abstract ImmutableSet<AttributeType<?>> getAttributeTypes();
 
   @Override
   public abstract <T> PortfolioItemInfo withAttribute(AttributeType<T> type, T value);
+
+  /**
+   * Combines this info with another.
+   * <p>
+   * If there is a conflict, data from this instance takes precedence.
+   * If the other instance is not of the same type, data may be lost.
+   * 
+   * @param other  the other instance
+   * @return the combined instance
+   */
+  public default PortfolioItemInfo combinedWith(PortfolioItemInfo other) {
+    PortfolioItemInfo combinedInfo = this;
+    if (!combinedInfo.getId().isPresent() && other.getId().isPresent()) {
+      combinedInfo = combinedInfo.withId(other.getId().get());
+    }
+    for (AttributeType<?> attrType : other.getAttributeTypes()) {
+      if (!combinedInfo.getAttributeTypes().contains(attrType)) {
+        combinedInfo = combinedInfo.withAttribute(attrType.captureWildcard(), other.getAttribute(attrType));
+      }
+    }
+    return combinedInfo;
+  }
 
 }

@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   
   <parent>
     <groupId>com.opengamma</groupId>
     <artifactId>corporate-parent</artifactId>
-    <version>2.6.5</version>
-    <relativePath></relativePath>
+    <version>2.7.3</version>
+    <relativePath />
   </parent>  
   <groupId>com.opengamma.strata</groupId>
   <artifactId>strata-examples</artifactId>
-  <version>2.3.3-SNAPSHOT</version>
+  <version>2.6.3-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Strata-Examples</name>
   <description>Example code to demonstrate use of Strata</description>
@@ -76,12 +73,18 @@
       <groupId>com.beust</groupId>
       <artifactId>jcommander</artifactId>
     </dependency>
+
+    <!-- Testing -->
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
+      <scope>test</scope>
     </dependency>
-
-    <!-- Testing -->
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.opengamma.strata</groupId>
       <artifactId>strata-collect</artifactId>
@@ -159,6 +162,35 @@
       </activation>
       <build>
         <plugins>
+          <!-- generate source jar file for main dist.zip -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+                <configuration>
+                  <skipIfEmpty>true</skipIfEmpty>
+                  <archive>
+                    <manifest>
+                      <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                      <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                    </manifest>
+                    <manifestEntries>
+                      <Implementation-Build>${buildNumber}</Implementation-Build>
+                      <Implementation-Date>${maven.build.timestamp}</Implementation-Date>
+                      <Implementation-Build-Id>${ci.build}</Implementation-Build-Id>
+                    </manifestEntries>
+                  </archive>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- create the jar-with-dependencies -->
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
             <configuration>
@@ -181,7 +213,7 @@
                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                   <resource>META-INF/org/joda/convert/Renamed.ini</resource>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.opengamma.strata.examples.report.ReportRunnerTool</mainClass>
                 </transformer>
@@ -196,6 +228,7 @@
               </execution>
             </executions>
           </plugin>
+          <!-- create zip -->
           <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
             <executions>
@@ -230,5 +263,4 @@
     <windowtitle>OpenGamma Strata Examples</windowtitle>
     <doctitle><![CDATA[<h1>OpenGamma Strata Examples</h1>]]></doctitle>
   </properties>
-
 </project>

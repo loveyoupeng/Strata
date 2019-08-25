@@ -19,12 +19,14 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -70,7 +72,7 @@ public final class Guavate {
    * <p>
    * This is harder than it should be, a method {@code Stream.of(Iterable)}
    * would have been appropriate, but cannot be added now.
-   * 
+   *
    * @param <T>  the type of element in the iterable
    * @param iterables  the iterables to combine
    * @return the list that combines the inputs
@@ -78,6 +80,21 @@ public final class Guavate {
   @SafeVarargs
   public static <T> ImmutableList<T> concatToList(Iterable<? extends T>... iterables) {
     return ImmutableList.copyOf(Iterables.concat(iterables));
+  }
+
+  /**
+   * Concatenates a number of iterables into a single set.
+   * <p>
+   * This is harder than it should be, a method {@code Stream.of(Iterable)}
+   * would have been appropriate, but cannot be added now.
+   *
+   * @param <T>  the type of element in the iterable
+   * @param iterables  the iterables to combine
+   * @return the set that combines the inputs
+   */
+  @SafeVarargs
+  public static <T> ImmutableSet<T> concatToSet(Iterable<? extends T>... iterables) {
+    return ImmutableSet.copyOf(Iterables.concat(iterables));
   }
 
   //-------------------------------------------------------------------------
@@ -212,6 +229,59 @@ public final class Guavate {
     return optional.isPresent() ?
         Stream.of(optional.get()) :
         Stream.empty();
+  }
+
+  //-------------------------------------------------------------------------
+  /**
+   * Converts a stream to an iterable for use in the for-each statement.
+   * <p>
+   * For some use cases this approach is nicer than {@link Stream#forEach(Consumer)}.
+   * Notably code that mutates a local variable or has to handle checked exceptions will benefit.
+   * <p>
+   * <pre>
+   *  for (Item item : in(stream)) {
+   *    // lazily use each item in the stream
+   *  }
+   * </pre>
+   * <p>
+   * NOTE: The result of this method can only be iterated once, which does not
+   * meet the expected specification of {@code Iterable}.
+   * Use in the for-each statement is safe as it will only be called once.
+   *
+   * @param <T>  the type of stream element
+   * @param stream  the stream
+   * @return an iterable representation of the stream that can only be invoked once
+   */
+  public static <T> Iterable<T> in(Stream<T> stream) {
+    return stream::iterator;
+  }
+
+  /**
+   * Converts an optional to an iterable for use in the for-each statement.
+   * <p>
+   * For some use cases this approach is nicer than {@link Optional#isPresent()}
+   * followed by {@link Optional#get()}.
+   * <p>
+   * <pre>
+   *  for (Item item : inOptional(optional)) {
+   *    // use the optional value, code not called if the optional is empty
+   *  }
+   * </pre>
+   * <p>
+   * NOTE: This method is intended only for use with the for-each statement.
+   * It does in fact return a general purpose {@code Iterable}, but the method name
+   * is focussed on the for-each use case.
+   *
+   * @param <T>  the type of optional element
+   * @param optional  the optional
+   * @return an iterable representation of the optional
+   */
+  public static <T> Iterable<T> inOptional(Optional<T> optional) {
+    if (optional.isPresent()) {
+      return ImmutableList.of(optional.get());
+    } else {
+      return ImmutableList.of();
+    }
   }
 
   //-------------------------------------------------------------------------
@@ -697,6 +767,37 @@ public final class Guavate {
         Collector.Characteristics.UNORDERED);
   }
 
+  /**
+   * Collector used at the end of a stream to build an immutable sorted map.
+   * <p>
+   * A collector is used to gather data at the end of a stream operation.
+   * This method returns a collector allowing streams to be gathered into
+   * an {@link ImmutableSortedMap}.
+   * <p>
+   * This returns a map by converting each stream element to a key and value.
+   * See {@link Collectors#toMap(Function, Function)} for more details.
+   *
+   * @param <T> the type of the stream elements
+   * @param <K> the type of the keys in the result map
+   * @param <V> the type of the values in the result map
+   * @param keyExtractor  function to produce keys from stream elements
+   * @param valueExtractor  function to produce values from stream elements
+   * @param mergeFn  function to merge values with the same key
+   * @return the immutable sorted map collector
+   */
+  public static <T, K extends Comparable<?>, V> Collector<T, ?, ImmutableSortedMap<K, V>> toImmutableSortedMap(
+      Function<? super T, ? extends K> keyExtractor,
+      Function<? super T, ? extends V> valueExtractor,
+      BiFunction<? super V, ? super V, ? extends V> mergeFn) {
+
+    return Collector.of(
+        TreeMap<K, V>::new,
+        (map, val) -> map.merge(keyExtractor.apply(val), valueExtractor.apply(val), mergeFn),
+        (m1, m2) -> mergeMaps(m1, m2, mergeFn),
+        map -> ImmutableSortedMap.copyOfSorted(map),
+        Collector.Characteristics.UNORDERED);
+  }
+
   //-------------------------------------------------------------------------
   /**
    * Collector used at the end of a stream to build an immutable multimap.
@@ -917,10 +1018,11 @@ public final class Guavate {
    * @param mergeFn  function applied to the existing and new values if the map contains the key
    * @param <K>  the key type
    * @param <V>  the value type
+   * @param <M>  the type of the first map
    * @return {@code map1} with the values from {@code map2} inserted
    */
-  private static <K, V> Map<K, V> mergeMaps(
-      Map<K, V> map1,
+  private static <K, V, M extends Map<K, V>> M mergeMaps(
+      M map1,
       Map<K, V> map2,
       BiFunction<? super V, ? super V, ? extends V> mergeFn) {
 

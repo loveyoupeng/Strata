@@ -7,14 +7,12 @@ package com.opengamma.strata.basics.currency;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.function.DoubleUnaryOperator;
 
 import org.joda.beans.JodaBeanUtils;
 import org.joda.convert.FromString;
 import org.joda.convert.ToString;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.math.DoubleMath;
 import com.opengamma.strata.collect.ArgChecker;
@@ -82,6 +80,7 @@ public final class CurrencyAmount
    * @param currency  the currency the amount is in
    * @param amount  the amount of the currency to represent
    * @return the currency amount
+   * @throws IllegalArgumentException if the amount is {@code NaN}
    */
   public static CurrencyAmount of(Currency currency, double amount) {
     return new CurrencyAmount(currency, amount);
@@ -99,7 +98,7 @@ public final class CurrencyAmount
    * @param currencyCode  the three letter currency code, ASCII and upper case
    * @param amount  the amount of the currency to represent
    * @return the currency amount
-   * @throws IllegalArgumentException if the currency code is invalid
+   * @throws IllegalArgumentException if the currency code is invalid, or if the amount is {@code NaN}
    */
   public static CurrencyAmount of(String currencyCode, double amount) {
     return of(Currency.of(currencyCode), amount);
@@ -117,14 +116,20 @@ public final class CurrencyAmount
    */
   @FromString
   public static CurrencyAmount parse(String amountStr) {
-    ArgChecker.notNull(amountStr, "amountStr");
-    List<String> split = Splitter.on(' ').splitToList(amountStr);
-    if (split.size() != 2) {
+    // this method has had some performance optimizations applied
+    if (amountStr == null || amountStr.length() <= 4 || amountStr.charAt(3) != ' ') {
       throw new IllegalArgumentException("Unable to parse amount, invalid format: " + amountStr);
     }
+
+    String currencyCode = amountStr.substring(0, 3);
+    String doubleString = amountStr.substring(4);
+    if (doubleString.indexOf(' ') != -1) {
+      throw new IllegalArgumentException("Unable to parse amount, invalid format: " + amountStr);
+    }
+
     try {
-      Currency cur = Currency.parse(split.get(0));
-      double amount = Double.parseDouble(split.get(1));
+      Currency cur = Currency.parse(currencyCode);
+      double amount = Double.parseDouble(doubleString);
       return new CurrencyAmount(cur, amount);
     } catch (RuntimeException ex) {
       throw new IllegalArgumentException("Unable to parse amount: " + amountStr, ex);
@@ -140,7 +145,7 @@ public final class CurrencyAmount
    */
   private CurrencyAmount(Currency currency, double amount) {
     this.currency = ArgChecker.notNull(currency, "currency");
-    this.amount = amount + 0d;  // this weird addition removes negative zero
+    this.amount = ArgChecker.notNaN(amount + 0d, "amount");  // this weird addition removes negative zero
   }
 
   //-------------------------------------------------------------------------

@@ -30,6 +30,7 @@ import com.opengamma.strata.collect.io.CsvRow;
 import com.opengamma.strata.collect.tuple.DoublesPair;
 import com.opengamma.strata.collect.tuple.Pair;
 import com.opengamma.strata.loader.LoaderUtils;
+import com.opengamma.strata.product.AttributeType;
 import com.opengamma.strata.product.GenericSecurity;
 import com.opengamma.strata.product.GenericSecurityPosition;
 import com.opengamma.strata.product.Position;
@@ -39,6 +40,7 @@ import com.opengamma.strata.product.SecurityId;
 import com.opengamma.strata.product.SecurityInfo;
 import com.opengamma.strata.product.SecurityPosition;
 import com.opengamma.strata.product.SecurityPriceInfo;
+import com.opengamma.strata.product.common.CcpId;
 import com.opengamma.strata.product.common.ExchangeId;
 import com.opengamma.strata.product.common.PutCall;
 import com.opengamma.strata.product.etd.EtdContractCode;
@@ -87,6 +89,24 @@ public interface PositionCsvInfoResolver {
    * @return the reference data
    */
   public abstract ReferenceData getReferenceData();
+
+  /**
+   * Parses standard attributes into {@code PositionInfo}.
+   * <p>
+   * This parses the standard set of attributes, which are the three constants in {@link AttributeType}.
+   * The column names are 'Description', 'Name' and 'CCP'.
+   * 
+   * @param row  the CSV row to parse
+   * @param builder  the builder to update
+   */
+  public default void parseStandardAttributes(CsvRow row, PositionInfoBuilder builder) {
+    row.findValue(PositionCsvLoader.DESCRIPTION_FIELD)
+        .ifPresent(str -> builder.addAttribute(AttributeType.DESCRIPTION, str));
+    row.findValue(PositionCsvLoader.NAME_FIELD)
+        .ifPresent(str -> builder.addAttribute(AttributeType.NAME, str));
+    row.findValue(PositionCsvLoader.CCP_FIELD)
+        .ifPresent(str -> builder.addAttribute(AttributeType.CCP, CcpId.of(str)));
+  }
 
   /**
    * Parses attributes into {@code PositionInfo}.
@@ -204,8 +224,8 @@ public interface PositionCsvInfoResolver {
    * @throws IllegalArgumentException if the specification is not found
    */
   public default EtdContractSpec parseEtdContractSpec(CsvRow row, EtdType type) {
-    ExchangeId exchangeId = ExchangeId.of(row.getValue(EXCHANGE_FIELD));
-    EtdContractCode contractCode = EtdContractCode.of(row.getValue(CONTRACT_CODE_FIELD));
+    ExchangeId exchangeId = row.getValue(EXCHANGE_FIELD, ExchangeId::of);
+    EtdContractCode contractCode = row.getValue(CONTRACT_CODE_FIELD, EtdContractCode::of);
     EtdContractSpecId specId = EtdIdUtils.contractSpecId(type, exchangeId, contractCode);
     return getReferenceData().findValue(specId).orElseThrow(
         () -> new IllegalArgumentException("ETD contract specification not found in reference data: " + specId));
@@ -250,8 +270,8 @@ public interface PositionCsvInfoResolver {
     EtdContractSpec contract = parseEtdContractSpec(row, EtdType.OPTION);
     Pair<YearMonth, EtdVariant> variant = CsvLoaderUtils.parseEtdVariant(row, EtdType.OPTION);
     int version = row.findValue(VERSION_FIELD).map(Integer::parseInt).orElse(DEFAULT_OPTION_VERSION_NUMBER);
-    PutCall putCall = LoaderUtils.parsePutCall(row.getValue(PUT_CALL_FIELD));
-    double strikePrice = Double.parseDouble(row.getValue(EXERCISE_PRICE_FIELD));
+    PutCall putCall = row.getValue(PUT_CALL_FIELD, LoaderUtils::parsePutCall);
+    double strikePrice = row.getValue(EXERCISE_PRICE_FIELD, LoaderUtils::parseDouble);
     YearMonth underlyingExpiry = row.findValue(UNDERLYING_EXPIRY_FIELD)
         .map(str -> LoaderUtils.parseYearMonth(str))
         .orElse(null);
@@ -274,8 +294,8 @@ public interface PositionCsvInfoResolver {
    * @throws IllegalArgumentException if the row cannot be parsed
    */
   public default SecurityPosition parseEtdFutureSecurityPosition(CsvRow row, PositionInfo info) {
-    ExchangeId exchangeId = ExchangeId.of(row.getValue(EXCHANGE_FIELD));
-    EtdContractCode contractCode = EtdContractCode.of(row.getValue(CONTRACT_CODE_FIELD));
+    ExchangeId exchangeId = row.getValue(EXCHANGE_FIELD, ExchangeId::of);
+    EtdContractCode contractCode = row.getValue(CONTRACT_CODE_FIELD, EtdContractCode::of);
     Pair<YearMonth, EtdVariant> variant = CsvLoaderUtils.parseEtdVariant(row, EtdType.FUTURE);
     SecurityId securityId = EtdIdUtils.futureId(exchangeId, contractCode, variant.getFirst(), variant.getSecond());
     DoublesPair quantity = CsvLoaderUtils.parseQuantity(row);
@@ -294,12 +314,12 @@ public interface PositionCsvInfoResolver {
    * @throws IllegalArgumentException if the row cannot be parsed
    */
   public default SecurityPosition parseEtdOptionSecurityPosition(CsvRow row, PositionInfo info) {
-    ExchangeId exchangeId = ExchangeId.of(row.getValue(EXCHANGE_FIELD));
-    EtdContractCode contractCode = EtdContractCode.of(row.getValue(CONTRACT_CODE_FIELD));
+    ExchangeId exchangeId = row.getValue(EXCHANGE_FIELD, ExchangeId::of);
+    EtdContractCode contractCode = row.getValue(CONTRACT_CODE_FIELD, EtdContractCode::of);
     Pair<YearMonth, EtdVariant> variant = CsvLoaderUtils.parseEtdVariant(row, EtdType.OPTION);
     int version = row.findValue(VERSION_FIELD).map(Integer::parseInt).orElse(DEFAULT_OPTION_VERSION_NUMBER);
-    PutCall putCall = LoaderUtils.parsePutCall(row.getValue(PUT_CALL_FIELD));
-    double strikePrice = Double.parseDouble(row.getValue(EXERCISE_PRICE_FIELD));
+    PutCall putCall = row.getValue(PUT_CALL_FIELD, LoaderUtils::parsePutCall);
+    double strikePrice = row.getValue(EXERCISE_PRICE_FIELD, LoaderUtils::parseDouble);
     YearMonth underlyingExpiry = row.findValue(UNDERLYING_EXPIRY_FIELD)
         .map(str -> LoaderUtils.parseYearMonth(str))
         .orElse(null);

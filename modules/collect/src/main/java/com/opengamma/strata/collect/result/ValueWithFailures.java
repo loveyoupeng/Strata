@@ -8,10 +8,12 @@ package com.opengamma.strata.collect.result;
 import static com.opengamma.strata.collect.Guavate.concatToList;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -32,7 +34,9 @@ import org.joda.beans.impl.direct.DirectMetaProperty;
 import org.joda.beans.impl.direct.DirectMetaPropertyMap;
 import org.joda.beans.impl.direct.DirectPrivateBeanBuilder;
 
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.collect.ArgChecker;
 
 /**
@@ -140,11 +144,13 @@ public final class ValueWithFailures<T>
   }
 
   /**
-   * Returns a collector that can be used to create a ValueWithFailure instance from a stream of ValueWithFailure
-   * instances.
+   * Returns a collector that can be used to create a combined {@code ValueWithFailure}
+   * from a stream of separate instances.
    * <p>
    * The {@link Collector} returned performs a reduction of its {@link ValueWithFailures} input elements under a
    * specified {@link BinaryOperator} using the provided identity.
+   * <p>
+   * This collects a {@code Stream<ValueWithFailures<T>>} to a {@code ValueWithFailures<T>}.
    *
    * @param <T>  the type of the success value in the {@link ValueWithFailures}
    * @param identityValue  the identity value
@@ -156,6 +162,118 @@ public final class ValueWithFailures<T>
       BinaryOperator<T> operator) {
 
     return Collectors.reducing(ValueWithFailures.of(identityValue), combiningValues(operator));
+  }
+
+  /**
+   * Returns a collector that creates a combined {@code ValueWithFailure} from a stream
+   * of separate instances, combining into an immutable list.
+   * <p>
+   * This collects a {@code Stream<ValueWithFailures<T>>} to a {@code ValueWithFailures<List<T>>}.
+   *
+   * @param <T>  the type of the success value in the {@link ValueWithFailures}
+   * @return a {@link Collector}
+   */
+  public static <T> Collector<ValueWithFailures<? extends T>, ?, ValueWithFailures<List<T>>> toCombinedValuesAsList() {
+    return Collector.of(
+        () -> new StreamBuilder<>(ImmutableList.<T>builder()),
+        StreamBuilder::add,
+        StreamBuilder::combine,
+        StreamBuilder::build);
+  }
+
+  /**
+   * Returns a collector that creates a combined {@code ValueWithFailure} from a stream
+   * of separate instances, combining into an immutable set.
+   * <p>
+   * This collects a {@code Stream<ValueWithFailures<T>>} to a {@code ValueWithFailures<Set<T>>}.
+   *
+   * @param <T>  the type of the success value in the {@link ValueWithFailures}
+   * @return a {@link Collector}
+   */
+  public static <T> Collector<ValueWithFailures<? extends T>, ?, ValueWithFailures<Set<T>>> toCombinedValuesAsSet() {
+    return Collector.of(
+        () -> new StreamBuilder<>(ImmutableSet.<T>builder()),
+        StreamBuilder::add,
+        StreamBuilder::combine,
+        StreamBuilder::build);
+  }
+
+  /**
+   * Combines separate instances of {@code ValueWithFailure} into a single instance,
+   * using a list to collect the values.
+   * <p>
+   * This converts {@code Iterable<ValueWithFailures<T>>} to {@code ValueWithFailures<List<T>>}.
+   *
+   * @param <T>  the type of the success value in the {@link ValueWithFailures}
+   * @param items  the items to combine
+   * @return a new instance with a list of success values
+   */
+  public static <T> ValueWithFailures<List<T>> combineValuesAsList(
+      Iterable<? extends ValueWithFailures<? extends T>> items) {
+
+    ImmutableList.Builder<T> values = ImmutableList.builder();
+    ImmutableList<FailureItem> failures = combine(items, values);
+    return ValueWithFailures.of(values.build(), failures);
+  }
+
+  /**
+   * Combines separate instances of {@code ValueWithFailure} into a single instance,
+   * using a set to collect the values.
+   * <p>
+   * This converts {@code Iterable<ValueWithFailures<T>>} to {@code ValueWithFailures<Set<T>>}.
+   *
+   * @param <T>  the type of the success value in the {@link ValueWithFailures}
+   * @param items  the items to combine
+   * @return a new instance with a set of success values
+   */
+  public static <T> ValueWithFailures<Set<T>> combineValuesAsSet(
+      Iterable<? extends ValueWithFailures<? extends T>> items) {
+
+    ImmutableSet.Builder<T> values = ImmutableSet.builder();
+    ImmutableList<FailureItem> failures = combine(items, values);
+    return ValueWithFailures.of(values.build(), failures);
+  }
+
+  // combines the collection into the specified builder
+  private static <T> ImmutableList<FailureItem> combine(
+      Iterable<? extends ValueWithFailures<? extends T>> items,
+      ImmutableCollection.Builder<T> values) {
+
+    ImmutableList.Builder<FailureItem> failures = ImmutableList.builder();
+    for (ValueWithFailures<? extends T> item : items) {
+      values.add(item.getValue());
+      failures.addAll(item.getFailures());
+    }
+    return failures.build();
+  }
+
+  // mutable combined instance builder for use in stream collection
+  // using a single dedicated collector is more efficient than a reduction with multiple calls to combinedWith()
+  private static final class StreamBuilder<T, B extends ImmutableCollection.Builder<T>> {
+
+    private final B values;
+    private final ImmutableList.Builder<FailureItem> failures = ImmutableList.builder();
+
+    private StreamBuilder(B values) {
+      this.values = values;
+    }
+
+    private void add(ValueWithFailures<? extends T> item) {
+      values.add(item.getValue());
+      failures.addAll(item.getFailures());
+    }
+
+    private StreamBuilder<T, B> combine(StreamBuilder<T, B> builder) {
+      values.addAll(builder.values.build());
+      failures.addAll(builder.failures.build());
+      return this;
+    }
+
+    // cast to the right collection type, can assume the methods in this class are using the correct types
+    @SuppressWarnings("unchecked")
+    private <C extends Collection<T>> ValueWithFailures<C> build() {
+      return (ValueWithFailures<C>) ValueWithFailures.of(values.build(), failures.build());
+    }
   }
 
   //-------------------------------------------------------------------------
@@ -214,7 +332,7 @@ public final class ValueWithFailures<T>
    * <p>
    * It is strongly advised to ensure that the function cannot throw an exception.
    * Exceptions from the function are not caught.
-   * 
+   *
    * @param <U>  the type of the value in the other instance
    * @param <R>  the type of the value in the returned result
    * @param other  the other instance
@@ -232,7 +350,7 @@ public final class ValueWithFailures<T>
    * Returns a new instance with the specified value, retaining the current failures.
    * <p>
    * This can be useful as an inline alternative to {@link #map(Function)}.
-   * 
+   *
    * @param <R>  the type of the value in the returned result
    * @param value  the new value
    * @return the combined instance of value and failures
@@ -245,7 +363,7 @@ public final class ValueWithFailures<T>
    * Returns a new instance with the specified value, combining the failures.
    * <p>
    * This can be useful as an inline alternative to {@link #flatMap(Function)}.
-   * 
+   *
    * @param <R>  the type of the value in the returned result
    * @param value  the new value
    * @param additionalFailures  the additional failures
@@ -259,7 +377,7 @@ public final class ValueWithFailures<T>
    * Returns a new instance with the specified value, combining the failures.
    * <p>
    * This can be useful as an inline alternative to {@link #flatMap(Function)}.
-   * 
+   *
    * @param <R>  the type of the value in the returned result
    * @param valueWithFailures  the new value with failures
    * @return the combined instance of value and failures
@@ -272,7 +390,7 @@ public final class ValueWithFailures<T>
 
   /**
    * Returns a new instance with the specified failures, retaining the current value.
-   * 
+   *
    * @param additionalFailures  the additional failures
    * @return the combined instance of value and failures
    */
