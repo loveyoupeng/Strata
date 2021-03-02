@@ -27,6 +27,7 @@ import org.joda.beans.impl.direct.DirectMetaPropertyMap;
 
 import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.basics.ReferenceData;
+import com.opengamma.strata.basics.currency.FxRateProvider;
 import com.opengamma.strata.basics.date.Tenor;
 import com.opengamma.strata.data.MarketData;
 import com.opengamma.strata.data.ObservableId;
@@ -196,6 +197,16 @@ public final class TermDepositCurveNode
   @Override
   public ResolvedTermDepositTrade resolvedTrade(double quantity, MarketData marketData, ReferenceData refData) {
     return trade(quantity, marketData, refData).resolve(refData);
+  }
+
+  @Override
+  public ResolvedTermDepositTrade sampleResolvedTrade(
+      LocalDate valuationDate,
+      FxRateProvider fxProvider,
+      ReferenceData refData) {
+
+    TermDepositTrade trade = template.createTrade(valuationDate, BuySell.BUY, 1d, additionalSpread, refData);
+    return trade.resolve(refData);
   }
 
   @Override
@@ -372,11 +383,11 @@ public final class TermDepositCurveNode
   public String toString() {
     StringBuilder buf = new StringBuilder(224);
     buf.append("TermDepositCurveNode{");
-    buf.append("template").append('=').append(template).append(',').append(' ');
-    buf.append("rateId").append('=').append(rateId).append(',').append(' ');
-    buf.append("additionalSpread").append('=').append(additionalSpread).append(',').append(' ');
-    buf.append("label").append('=').append(label).append(',').append(' ');
-    buf.append("date").append('=').append(date).append(',').append(' ');
+    buf.append("template").append('=').append(JodaBeanUtils.toString(template)).append(',').append(' ');
+    buf.append("rateId").append('=').append(JodaBeanUtils.toString(rateId)).append(',').append(' ');
+    buf.append("additionalSpread").append('=').append(JodaBeanUtils.toString(additionalSpread)).append(',').append(' ');
+    buf.append("label").append('=').append(JodaBeanUtils.toString(label)).append(',').append(' ');
+    buf.append("date").append('=').append(JodaBeanUtils.toString(date)).append(',').append(' ');
     buf.append("dateOrder").append('=').append(JodaBeanUtils.toString(dateOrder));
     buf.append('}');
     return buf.toString();

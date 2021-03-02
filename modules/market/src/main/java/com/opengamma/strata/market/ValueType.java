@@ -62,6 +62,10 @@ public final class ValueType
    */
   public static final ValueType DISCOUNT_FACTOR = of("DiscountFactor");
   /**
+   * Type used when each value is a dividend yield - 'DividendYield'.
+   */
+  public static final ValueType DIVIDEND_YIELD = of("DividendYield");
+  /**
    * Type used when each value is a price index, as used for inflation products - 'PriceIndex'.
    */
   public static final ValueType PRICE_INDEX = of("PriceIndex");
@@ -114,6 +118,10 @@ public final class ValueType
    * Type used when each value is the SABR nu parameter - 'SabrNu'.
    */
   public static final ValueType SABR_NU = of("SabrNu");
+  /**
+   * Type used when each value is the SABR shift parameter - 'SabrShift'.
+   */
+  public static final ValueType SABR_SHIFT = of("SabrShift");
   /**
    * Type used when each value is a risk reversal - 'RiskReversal'.
    */

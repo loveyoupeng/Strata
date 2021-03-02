@@ -5,24 +5,25 @@
  */
 package com.opengamma.strata.product;
 
+import static com.opengamma.strata.basics.StandardSchemes.LEI_SCHEME;
 import static com.opengamma.strata.collect.TestHelper.assertSerialization;
 import static com.opengamma.strata.collect.TestHelper.coverBeanEquals;
 import static com.opengamma.strata.collect.TestHelper.coverImmutableBean;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import com.opengamma.strata.basics.location.Country;
 
 /**
  * Test {@link SimpleLegalEntity}.
  */
-@Test
 public class SimpleLegalEntityTest {
 
-  private static final LegalEntityId LEI = LegalEntityId.of("LEI", "A");
-  private static final LegalEntityId LEI2 = LegalEntityId.of("LEI", "B");
+  private static final LegalEntityId LEI = LegalEntityId.of(LEI_SCHEME, "A");
+  private static final LegalEntityId LEI2 = LegalEntityId.of(LEI_SCHEME, "B");
 
   //-------------------------------------------------------------------------
+  @Test
   public void coverage() {
     SimpleLegalEntity test = SimpleLegalEntity.of(LEI, "US GOV", Country.US);
     coverImmutableBean(test);
@@ -30,6 +31,7 @@ public class SimpleLegalEntityTest {
     coverBeanEquals(test, test2);
   }
 
+  @Test
   public void test_serialization() {
     SimpleLegalEntity test = SimpleLegalEntity.of(LEI, "US GOV", Country.US);
     assertSerialization(test);

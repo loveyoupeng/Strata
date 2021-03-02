@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.BeanBuilder;
@@ -37,8 +38,8 @@ import com.opengamma.strata.collect.array.DoubleArray;
 import com.opengamma.strata.collect.timeseries.LocalDateDoubleTimeSeries;
 import com.opengamma.strata.data.MarketDataName;
 import com.opengamma.strata.market.ValueType;
+import com.opengamma.strata.market.curve.Curve;
 import com.opengamma.strata.market.curve.InflationNodalCurve;
-import com.opengamma.strata.market.curve.NodalCurve;
 import com.opengamma.strata.market.param.CurrencyParameterSensitivities;
 import com.opengamma.strata.market.param.ParameterMetadata;
 import com.opengamma.strata.market.param.ParameterPerturbation;
@@ -73,7 +74,7 @@ public final class SimplePriceIndexValues
    * For example, zero represents the valuation month, one the next month and so on.
    */
   @PropertyDefinition(validate = "notNull")
-  private final NodalCurve curve;
+  private final Curve curve;
   /**
    * The monthly time-series of fixings.
    * This includes the known historical fixings and must not be empty.
@@ -106,7 +107,7 @@ public final class SimplePriceIndexValues
   public static SimplePriceIndexValues of(
       PriceIndex index,
       LocalDate valuationDate,
-      NodalCurve curve,
+      Curve curve,
       LocalDateDoubleTimeSeries fixings) {
 
     return new SimplePriceIndexValues(index, valuationDate, curve, fixings);
@@ -116,7 +117,7 @@ public final class SimplePriceIndexValues
   private SimplePriceIndexValues(
       PriceIndex index,
       LocalDate valuationDate,
-      NodalCurve curve,
+      Curve curve,
       LocalDateDoubleTimeSeries fixings) {
 
     ArgChecker.isFalse(fixings.isEmpty(), "Fixings must not be empty");
@@ -150,6 +151,11 @@ public final class SimplePriceIndexValues
   @Override
   public ParameterMetadata getParameterMetadata(int parameterIndex) {
     return curve.getParameterMetadata(parameterIndex);
+  }
+
+  @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return curve.findParameterIndex(metadata);
   }
 
   @Override
@@ -221,7 +227,7 @@ public final class SimplePriceIndexValues
    * @param curve  the new curve
    * @return the new instance
    */
-  public SimplePriceIndexValues withCurve(NodalCurve curve) {
+  public SimplePriceIndexValues withCurve(Curve curve) {
     return new SimplePriceIndexValues(index, valuationDate, curve, fixings);
   }
 
@@ -279,7 +285,7 @@ public final class SimplePriceIndexValues
    * For example, zero represents the valuation month, one the next month and so on.
    * @return the value of the property, not null
    */
-  public NodalCurve getCurve() {
+  public Curve getCurve() {
     return curve;
   }
 
@@ -327,9 +333,9 @@ public final class SimplePriceIndexValues
   public String toString() {
     StringBuilder buf = new StringBuilder(160);
     buf.append("SimplePriceIndexValues{");
-    buf.append("index").append('=').append(index).append(',').append(' ');
-    buf.append("valuationDate").append('=').append(valuationDate).append(',').append(' ');
-    buf.append("curve").append('=').append(curve).append(',').append(' ');
+    buf.append("index").append('=').append(JodaBeanUtils.toString(index)).append(',').append(' ');
+    buf.append("valuationDate").append('=').append(JodaBeanUtils.toString(valuationDate)).append(',').append(' ');
+    buf.append("curve").append('=').append(JodaBeanUtils.toString(curve)).append(',').append(' ');
     buf.append("fixings").append('=').append(JodaBeanUtils.toString(fixings));
     buf.append('}');
     return buf.toString();
@@ -358,8 +364,8 @@ public final class SimplePriceIndexValues
     /**
      * The meta-property for the {@code curve} property.
      */
-    private final MetaProperty<NodalCurve> curve = DirectMetaProperty.ofImmutable(
-        this, "curve", SimplePriceIndexValues.class, NodalCurve.class);
+    private final MetaProperty<Curve> curve = DirectMetaProperty.ofImmutable(
+        this, "curve", SimplePriceIndexValues.class, Curve.class);
     /**
      * The meta-property for the {@code fixings} property.
      */
@@ -432,7 +438,7 @@ public final class SimplePriceIndexValues
      * The meta-property for the {@code curve} property.
      * @return the meta-property, not null
      */
-    public MetaProperty<NodalCurve> curve() {
+    public MetaProperty<Curve> curve() {
       return curve;
     }
 
@@ -479,7 +485,7 @@ public final class SimplePriceIndexValues
 
     private PriceIndex index;
     private LocalDate valuationDate;
-    private NodalCurve curve;
+    private Curve curve;
     private LocalDateDoubleTimeSeries fixings;
 
     /**
@@ -515,7 +521,7 @@ public final class SimplePriceIndexValues
           this.valuationDate = (LocalDate) newValue;
           break;
         case 95027439:  // curve
-          this.curve = (NodalCurve) newValue;
+          this.curve = (Curve) newValue;
           break;
         case -843784602:  // fixings
           this.fixings = (LocalDateDoubleTimeSeries) newValue;

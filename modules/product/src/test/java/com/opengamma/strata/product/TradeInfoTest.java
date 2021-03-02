@@ -16,7 +16,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import com.opengamma.strata.basics.StandardId;
 
@@ -64,6 +64,20 @@ public class TradeInfoTest {
     assertThat(test.getAttributes()).containsEntry(AttributeType.DESCRIPTION, "A");
     assertThat(test.getAttribute(AttributeType.DESCRIPTION)).isEqualTo("A");
     assertThat(test.findAttribute(AttributeType.DESCRIPTION)).hasValue("A");
+  }
+
+  @Test
+  public void test_builder_with_bulk() {
+    Attributes override = Attributes.of(AttributeType.DESCRIPTION, "B").withAttribute(AttributeType.NAME, "C");
+    TradeInfo test = TradeInfo.builder()
+        .build()
+        .withId(ID)
+        .withAttribute(AttributeType.DESCRIPTION, "A")
+        .withAttributes(override);
+    assertThat(test.getId()).hasValue(ID);
+    assertThat(test.getAttributeTypes()).containsOnly(AttributeType.DESCRIPTION, AttributeType.NAME);
+    assertThat(test.getAttribute(AttributeType.DESCRIPTION)).isEqualTo("B");
+    assertThat(test.getAttribute(AttributeType.NAME)).isEqualTo("C");
   }
 
   @Test
@@ -116,6 +130,59 @@ public class TradeInfoTest {
     assertThat(test.getAttributeTypes()).containsOnly(AttributeType.DESCRIPTION, AttributeType.NAME);
     assertThat(test.getAttributes())
         .containsEntry(AttributeType.DESCRIPTION, "A")
+        .containsEntry(AttributeType.NAME, "B");
+  }
+
+  @Test
+  public void test_overrideWith() {
+    TradeInfo base = TradeInfo.builder()
+        .id(ID)
+        .counterparty(COUNTERPARTY)
+        .addAttribute(AttributeType.DESCRIPTION, "A")
+        .build();
+    TradeInfo other = TradeInfo.builder()
+        .counterparty(COUNTERPARTY2)
+        .tradeDate(date(2014, 6, 21))
+        .tradeTime(LocalTime.NOON)
+        .zone(ZoneOffset.UTC)
+        .settlementDate(date(2014, 6, 21))
+        .addAttribute(AttributeType.DESCRIPTION, "B")
+        .addAttribute(AttributeType.NAME, "B")
+        .build();
+    TradeInfo test = base.overrideWith(other);
+    assertThat(test.getId()).hasValue(ID);
+    assertThat(test.getCounterparty()).hasValue(COUNTERPARTY2);
+    assertThat(test.getTradeDate()).hasValue(date(2014, 6, 21));
+    assertThat(test.getTradeTime()).hasValue(LocalTime.NOON);
+    assertThat(test.getZone()).hasValue(ZoneOffset.UTC);
+    assertThat(test.getSettlementDate()).hasValue(date(2014, 6, 21));
+    assertThat(test.getAttributeTypes()).containsOnly(AttributeType.DESCRIPTION, AttributeType.NAME);
+    assertThat(test.getAttributes())
+        .containsEntry(AttributeType.DESCRIPTION, "B")
+        .containsEntry(AttributeType.NAME, "B");
+  }
+
+  @Test
+  public void test_overrideWith_otherType() {
+    TradeInfo base = TradeInfo.builder()
+        .counterparty(COUNTERPARTY)
+        .addAttribute(AttributeType.DESCRIPTION, "A")
+        .build();
+    PositionInfo other = PositionInfo.builder()
+        .id(ID)
+        .addAttribute(AttributeType.DESCRIPTION, "B")
+        .addAttribute(AttributeType.NAME, "B")
+        .build();
+    TradeInfo test = base.overrideWith(other);
+    assertThat(test.getId()).hasValue(ID);
+    assertThat(test.getCounterparty()).hasValue(COUNTERPARTY);
+    assertThat(test.getTradeDate()).isEmpty();
+    assertThat(test.getTradeTime()).isEmpty();
+    assertThat(test.getZone()).isEmpty();
+    assertThat(test.getSettlementDate()).isEmpty();
+    assertThat(test.getAttributeTypes()).containsOnly(AttributeType.DESCRIPTION, AttributeType.NAME);
+    assertThat(test.getAttributes())
+        .containsEntry(AttributeType.DESCRIPTION, "B")
         .containsEntry(AttributeType.NAME, "B");
   }
 

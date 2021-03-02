@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.BeanBuilder;
@@ -98,10 +99,7 @@ public final class SimpleIborIndexRates
    * @param curve  the curve of forward rates
    * @return the rates view
    */
-  public static SimpleIborIndexRates of(
-      IborIndex index,
-      LocalDate valuationDate,
-      Curve curve) {
+  public static SimpleIborIndexRates of(IborIndex index, LocalDate valuationDate, Curve curve) {
     return new SimpleIborIndexRates(index, valuationDate, curve, LocalDateDoubleTimeSeries.empty());
   }
 
@@ -124,6 +122,7 @@ public final class SimpleIborIndexRates
       LocalDate valuationDate,
       Curve curve,
       LocalDateDoubleTimeSeries fixings) {
+
     return new SimpleIborIndexRates(index, valuationDate, curve, fixings);
   }
 
@@ -179,6 +178,11 @@ public final class SimpleIborIndexRates
   @Override
   public ParameterMetadata getParameterMetadata(int parameterIndex) {
     return curve.getParameterMetadata(parameterIndex);
+  }
+
+  @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return curve.findParameterIndex(metadata);
   }
 
   @Override
@@ -365,9 +369,9 @@ public final class SimpleIborIndexRates
   public String toString() {
     StringBuilder buf = new StringBuilder(160);
     buf.append("SimpleIborIndexRates{");
-    buf.append("index").append('=').append(index).append(',').append(' ');
-    buf.append("valuationDate").append('=').append(valuationDate).append(',').append(' ');
-    buf.append("curve").append('=').append(curve).append(',').append(' ');
+    buf.append("index").append('=').append(JodaBeanUtils.toString(index)).append(',').append(' ');
+    buf.append("valuationDate").append('=').append(JodaBeanUtils.toString(valuationDate)).append(',').append(' ');
+    buf.append("curve").append('=').append(JodaBeanUtils.toString(curve)).append(',').append(' ');
     buf.append("fixings").append('=').append(JodaBeanUtils.toString(fixings));
     buf.append('}');
     return buf.toString();

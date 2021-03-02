@@ -8,6 +8,7 @@ package com.opengamma.strata.collect.io;
 import java.io.UncheckedIOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -199,6 +200,39 @@ public final class IniFile {
       throw new IllegalArgumentException("Unknown INI file section: " + name);
     }
     return sectionMap.get(name);
+  }
+
+  /**
+   * Finds a single section in this INI file.
+   * <p>
+   * This returns the section associated with the specified name, empty if not present.
+   * 
+   * @param name  the section name
+   * @return the INI file section, empty if not found
+   */
+  public Optional<PropertySet> findSection(String name) {
+    ArgChecker.notNull(name, "name");
+    return Optional.ofNullable(sectionMap.get(name));
+  }
+
+  //-------------------------------------------------------------------------
+  /**
+   * Combines this file with another.
+   * <p>
+   * This file takes precedence. Where a key exists in both files the values in the other file
+   * will be discarded.
+   * Any order of any additional keys will be retained, with those keys located after the base set of keys.
+   *
+   * @param other  the other INI file
+   * @return the combined INI file
+   */
+  public IniFile combinedWith(IniFile other) {
+    ArgChecker.notNull(other, "other");
+
+    return IniFile.of(MapStream.concat(
+        MapStream.of(this.sectionMap),
+        MapStream.of(other.sectionMap))
+        .toMap(PropertySet::combinedWith));
   }
 
   //-------------------------------------------------------------------------

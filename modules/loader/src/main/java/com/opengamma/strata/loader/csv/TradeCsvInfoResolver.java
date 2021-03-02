@@ -5,6 +5,10 @@
  */
 package com.opengamma.strata.loader.csv;
 
+import static com.opengamma.strata.loader.csv.CsvLoaderColumns.CCP_FIELD;
+import static com.opengamma.strata.loader.csv.CsvLoaderColumns.DESCRIPTION_FIELD;
+import static com.opengamma.strata.loader.csv.CsvLoaderColumns.NAME_FIELD;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -73,11 +77,11 @@ public interface TradeCsvInfoResolver {
    * @param builder  the builder to update
    */
   public default void parseStandardAttributes(CsvRow row, TradeInfoBuilder builder) {
-    row.findValue(TradeCsvLoader.DESCRIPTION_FIELD)
+    row.findValue(DESCRIPTION_FIELD)
         .ifPresent(str -> builder.addAttribute(AttributeType.DESCRIPTION, str));
-    row.findValue(TradeCsvLoader.NAME_FIELD)
+    row.findValue(NAME_FIELD)
         .ifPresent(str -> builder.addAttribute(AttributeType.NAME, str));
-    row.findValue(TradeCsvLoader.CCP_FIELD)
+    row.findValue(CCP_FIELD)
         .ifPresent(str -> builder.addAttribute(AttributeType.CCP, CcpId.of(str)));
   }
 
@@ -320,7 +324,7 @@ public interface TradeCsvInfoResolver {
    * @throws RuntimeException if the row contains invalid data
    */
   public default SecurityQuantityTrade parseSecurityTrade(CsvRow row, TradeInfo info) {
-    return SecurityCsvPlugin.parseTrade(row, info, this);
+    return SecurityCsvPlugin.parseTradeWithPriceInfo(row, info, this);
   }
 
   /**
@@ -433,8 +437,28 @@ public interface TradeCsvInfoResolver {
     return CdsTradeCsvPlugin.parseCdsIndex(row, info, this);
   }
 
+  //-------------------------------------------------------------------------
   /**
-   * Parses any other kind of trade from CSV.
+   * Parses any kind of trade from CSV before standard matching.
+   * <p>
+   * This is called before the standard matching on the 'Product Type' column.
+   * As such, it allows the standard parsing to be replaced for a given type.
+   * 
+   * @param typeUpper  the upper case product type column
+   * @param row  the CSV row to parse
+   * @param info  the trade info
+   * @return the trade, empty if the product type is not known, or if standard parsing should occur
+   * @throws RuntimeException if the product type is known but the row contains invalid data
+   */
+  public default Optional<Trade> overrideParseTrade(String typeUpper, CsvRow row, TradeInfo info) {
+    return Optional.empty();
+  }
+
+  /**
+   * Parses any kind of trade from CSV after standard matching.
+   * <p>
+   * This is called after the standard matching on the 'Product Type' column.
+   * As such, it allows non-matched rows to be captured.
    * 
    * @param typeUpper  the upper case product type column
    * @param row  the CSV row to parse

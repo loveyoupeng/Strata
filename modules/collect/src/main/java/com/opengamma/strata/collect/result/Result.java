@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -154,16 +155,52 @@ public final class Result<T>
   }
 
   /**
+   * Creates a failed result caused by a throwable.
+   * <p>
+   * The failure will have a reason of {@code ERROR}.
+   *
+   * @param <R> the expected type of the result
+   * @param cause  the cause of the failure
+   * @return a failure result
+   */
+  public static <R> Result<R> failure(Throwable cause) {
+    return new Result<>(Failure.of(FailureReason.ERROR, cause));
+  }
+
+  /**
    * Creates a failed result caused by an exception.
    * <p>
    * The failure will have a reason of {@code ERROR}.
    *
    * @param <R> the expected type of the result
-   * @param exception  the cause of the failure
+   * @param cause  the cause of the failure
    * @return a failure result
    */
-  public static <R> Result<R> failure(Exception exception) {
-    return new Result<>(Failure.of(FailureReason.ERROR, exception));
+  public static <R> Result<R> failure(Exception cause) {
+    // this method is retained to ensure binary compatibility
+    return new Result<>(Failure.of(FailureReason.ERROR, cause));
+  }
+
+  /**
+   * Creates a failed result caused by a throwable.
+   * <p>
+   * The failure will have a reason of {@code ERROR}.
+   * <p>
+   * The message is produced using a template that contains zero to many "{}" placeholders.
+   * Each placeholder is replaced by the next available argument.
+   * If there are too few arguments, then the message will be left with placeholders.
+   * If there are too many arguments, then the excess arguments are appended to the
+   * end of the message. No attempt is made to format the arguments.
+   * See {@link Messages#format(String, Object...)} for more details.
+   *
+   * @param <R> the expected type of the result
+   * @param cause  the cause of the failure
+   * @param message  a message explaining the failure, uses "{}" for inserting {@code messageArgs}
+   * @param messageArgs  the arguments for the message
+   * @return a failure result
+   */
+  public static <R> Result<R> failure(Throwable cause, String message, Object... messageArgs) {
+    return new Result<>(Failure.of(FailureReason.ERROR, cause, message, messageArgs));
   }
 
   /**
@@ -179,13 +216,26 @@ public final class Result<T>
    * See {@link Messages#format(String, Object...)} for more details.
    *
    * @param <R> the expected type of the result
-   * @param exception  the cause of the failure
+   * @param cause  the cause of the failure
    * @param message  a message explaining the failure, uses "{}" for inserting {@code messageArgs}
    * @param messageArgs  the arguments for the message
    * @return a failure result
    */
-  public static <R> Result<R> failure(Exception exception, String message, Object... messageArgs) {
-    return new Result<>(Failure.of(FailureReason.ERROR, exception, message, messageArgs));
+  public static <R> Result<R> failure(Exception cause, String message, Object... messageArgs) {
+    // this method is retained to ensure binary compatibility
+    return new Result<>(Failure.of(FailureReason.ERROR, cause, message, messageArgs));
+  }
+
+  /**
+   * Creates a failed result caused by a throwable with a specified reason.
+   *
+   * @param <R> the expected type of the result
+   * @param reason  the result reason
+   * @param cause  the cause of the failure
+   * @return a failure result
+   */
+  public static <R> Result<R> failure(FailureReason reason, Throwable cause) {
+    return new Result<>(Failure.of(reason, cause));
   }
 
   /**
@@ -193,11 +243,38 @@ public final class Result<T>
    *
    * @param <R> the expected type of the result
    * @param reason  the result reason
-   * @param exception  the cause of the failure
+   * @param cause  the cause of the failure
    * @return a failure result
    */
-  public static <R> Result<R> failure(FailureReason reason, Exception exception) {
-    return new Result<>(Failure.of(reason, exception));
+  public static <R> Result<R> failure(FailureReason reason, Exception cause) {
+    // this method is retained to ensure binary compatibility
+    return new Result<>(Failure.of(reason, cause));
+  }
+
+  /**
+   * Creates a failed result caused by a throwable with a specified reason and message.
+   * <p>
+   * The message is produced using a template that contains zero to many "{}" placeholders.
+   * Each placeholder is replaced by the next available argument.
+   * If there are too few arguments, then the message will be left with placeholders.
+   * If there are too many arguments, then the excess arguments are appended to the
+   * end of the message. No attempt is made to format the arguments.
+   * See {@link Messages#format(String, Object...)} for more details.
+   *
+   * @param <R> the expected type of the result
+   * @param reason  the result reason
+   * @param cause  the cause of the failure
+   * @param message  a message explaining the failure, uses "{}" for inserting {@code messageArgs}
+   * @param messageArgs  the arguments for the message
+   * @return a failure result
+   */
+  public static <R> Result<R> failure(
+      FailureReason reason,
+      Throwable cause,
+      String message,
+      Object... messageArgs) {
+
+    return new Result<>(Failure.of(reason, cause, message, messageArgs));
   }
 
   /**
@@ -212,18 +289,19 @@ public final class Result<T>
    *
    * @param <R> the expected type of the result
    * @param reason  the result reason
-   * @param exception  the cause of the failure
+   * @param cause  the cause of the failure
    * @param message  a message explaining the failure, uses "{}" for inserting {@code messageArgs}
    * @param messageArgs  the arguments for the message
    * @return a failure result
    */
   public static <R> Result<R> failure(
       FailureReason reason,
-      Exception exception,
+      Exception cause,
       String message,
       Object... messageArgs) {
 
-    return new Result<>(Failure.of(reason, exception, message, messageArgs));
+    // this method is retained to ensure binary compatibility
+    return new Result<>(Failure.of(reason, cause, message, messageArgs));
   }
 
   /**
@@ -315,6 +393,19 @@ public final class Result<T>
    */
   public static <R> Result<R> failure(Failure failure) {
     return new Result<>(failure);
+  }
+
+  /**
+   * Creates a failed result containing a failure item.
+   * <p>
+   * This is useful for converting an existing {@code FailureItem} instance to a result.
+   *
+   * @param <R> the expected type of the result
+   * @param failureItem  details of the failure
+   * @return a failed result containing the specified failure
+   */
+  public static <R> Result<R> failure(FailureItem failureItem) {
+    return new Result<>(Failure.of(failureItem));
   }
 
   /**
@@ -619,6 +710,15 @@ public final class Result<T>
 
   //-------------------------------------------------------------------------
   /**
+   * Returns the result value if calculated successfully, empty if a failure occurred.
+   *
+   * @return the result value if success, empty if failure
+   */
+  public Optional<T> get() {
+    return Optional.ofNullable(value);
+  }
+
+  /**
    * Returns the actual result value if calculated successfully, throwing an
    * exception if a failure occurred.
    * <p>
@@ -644,7 +744,7 @@ public final class Result<T>
    * <p>
    * If this result is a success then the result value is returned.
    * If this result is a failure then the default value is returned.
-   * The default value must not be null.
+   * The default value may be null.
    * <p>
    * Application code is recommended to use {@link #map(Function)} and
    * {@link #flatMap(Function)} in preference to this method.
@@ -653,7 +753,6 @@ public final class Result<T>
    * @return either the result value or the default value
    */
   public T getValueOrElse(T defaultValue) {
-    ArgChecker.notNull(defaultValue, "defaultValue");
     return (isSuccess() ? value : defaultValue);
   }
 
@@ -730,6 +829,64 @@ public final class Result<T>
       }
     } else {
       return Result.failure(this);
+    }
+  }
+
+  /**
+   * Processes a failed result by applying a function that alters the failure.
+   * <p>
+   * This operation allows post-processing of a result failure.
+   * The specified function represents a conversion to be performed on the failure.
+   * <p>
+   * If this result is a failure, then the specified function is invoked.
+   * The return value of the specified function is returned to the caller
+   * wrapped in a failure result. If an exception is thrown when the function
+   * is invoked, this will be caught and a failure {@code Result} returned.
+   * <p>
+   * If this result is a success, then {@code this} is returned.
+   * The specified function is not invoked.
+   *
+   * @param function  the function to transform the failure with
+   * @return the new result
+   */
+  public Result<T> mapFailure(Function<Failure, Failure> function) {
+    if (isFailure()) {
+      try {
+        return Result.failure(function.apply(failure));
+      } catch (Exception e) {
+        return Result.failure(e);
+      }
+    } else {
+      return this;
+    }
+  }
+
+  /**
+   * Processes a failed result by applying a function that alters the failure items.
+   * <p>
+   * This operation allows post-processing of a result failure.
+   * The specified function represents a conversion to be performed on the failure.
+   * <p>
+   * If this result is a failure, then the specified function is invoked.
+   * The return values of the specified function is returned to the caller
+   * wrapped in a failure result. If an exception is thrown when the function
+   * is invoked, this will be caught and a failure {@code Result} returned.
+   * <p>
+   * If this result is a success, then {@code this} is returned.
+   * The specified function is not invoked.
+   *
+   * @param function  the function to transform the failure with
+   * @return the new result
+   */
+  public Result<T> mapFailureItems(Function<FailureItem, FailureItem> function) {
+    if (isFailure()) {
+      try {
+        return Result.failure(failure.mapItems(function));
+      } catch (Exception e) {
+        return Result.failure(e);
+      }
+    } else {
+      return this;
     }
   }
 
@@ -888,7 +1045,7 @@ public final class Result<T>
   public String toString() {
     StringBuilder buf = new StringBuilder(96);
     buf.append("Result{");
-    buf.append("value").append('=').append(value).append(',').append(' ');
+    buf.append("value").append('=').append(JodaBeanUtils.toString(value)).append(',').append(' ');
     buf.append("failure").append('=').append(JodaBeanUtils.toString(failure));
     buf.append('}');
     return buf.toString();

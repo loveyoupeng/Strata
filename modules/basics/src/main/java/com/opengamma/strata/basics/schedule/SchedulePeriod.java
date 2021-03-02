@@ -108,6 +108,7 @@ public final class SchedulePeriod
       LocalDate endDate,
       LocalDate unadjustedStartDate,
       LocalDate unadjustedEndDate) {
+
     return new SchedulePeriod(startDate, endDate, unadjustedStartDate, unadjustedEndDate);
   }
 
@@ -120,9 +121,7 @@ public final class SchedulePeriod
    * @param endDate  the end date, used for financial calculations such as interest accrual
    * @return the period
    */
-  public static SchedulePeriod of(
-      LocalDate startDate,
-      LocalDate endDate) {
+  public static SchedulePeriod of(LocalDate startDate, LocalDate endDate) {
     return new SchedulePeriod(startDate, endDate, startDate, endDate);
   }
 
@@ -228,7 +227,7 @@ public final class SchedulePeriod
    * The frequency and roll convention are used to build unadjusted schedule dates.
    * The stub convention is used to handle any remaining time when the new frequency
    * does not evenly divide into the period.
-   * 
+   *
    * @param frequency  the frequency of the sub-schedule
    * @param rollConvention  the roll convention to use for rolling
    * @param stubConvention  the stub convention to use for any excess
@@ -445,9 +444,9 @@ public final class SchedulePeriod
   public String toString() {
     StringBuilder buf = new StringBuilder(160);
     buf.append("SchedulePeriod{");
-    buf.append("startDate").append('=').append(startDate).append(',').append(' ');
-    buf.append("endDate").append('=').append(endDate).append(',').append(' ');
-    buf.append("unadjustedStartDate").append('=').append(unadjustedStartDate).append(',').append(' ');
+    buf.append("startDate").append('=').append(JodaBeanUtils.toString(startDate)).append(',').append(' ');
+    buf.append("endDate").append('=').append(JodaBeanUtils.toString(endDate)).append(',').append(' ');
+    buf.append("unadjustedStartDate").append('=').append(JodaBeanUtils.toString(unadjustedStartDate)).append(',').append(' ');
     buf.append("unadjustedEndDate").append('=').append(JodaBeanUtils.toString(unadjustedEndDate));
     buf.append('}');
     return buf.toString();

@@ -29,6 +29,7 @@ import org.joda.beans.impl.direct.DirectMetaPropertyMap;
 import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.basics.ReferenceData;
 import com.opengamma.strata.basics.currency.FxRate;
+import com.opengamma.strata.basics.currency.FxRateProvider;
 import com.opengamma.strata.collect.ArgChecker;
 import com.opengamma.strata.data.FxRateId;
 import com.opengamma.strata.data.MarketData;
@@ -252,6 +253,17 @@ public final class XCcyIborIborSwapCurveNode
   }
 
   @Override
+  public ResolvedSwapTrade sampleResolvedTrade(
+      LocalDate valuationDate,
+      FxRateProvider fxProvider,
+      ReferenceData refData) {
+
+    double rate = fxProvider.fxRate(template.getCurrencyPair());
+    SwapTrade trade = template.createTrade(valuationDate, BuySell.SELL, 1d, rate, additionalSpread, refData);
+    return trade.resolve(refData);
+  }
+
+  @Override
   public double initialGuess(MarketData marketData, ValueType valueType) {
     if (ValueType.DISCOUNT_FACTOR.equals(valueType)) {
       return 1.0d;
@@ -436,12 +448,12 @@ public final class XCcyIborIborSwapCurveNode
   public String toString() {
     StringBuilder buf = new StringBuilder(256);
     buf.append("XCcyIborIborSwapCurveNode{");
-    buf.append("template").append('=').append(template).append(',').append(' ');
-    buf.append("fxRateId").append('=').append(fxRateId).append(',').append(' ');
-    buf.append("spreadId").append('=').append(spreadId).append(',').append(' ');
-    buf.append("additionalSpread").append('=').append(additionalSpread).append(',').append(' ');
-    buf.append("label").append('=').append(label).append(',').append(' ');
-    buf.append("date").append('=').append(date).append(',').append(' ');
+    buf.append("template").append('=').append(JodaBeanUtils.toString(template)).append(',').append(' ');
+    buf.append("fxRateId").append('=').append(JodaBeanUtils.toString(fxRateId)).append(',').append(' ');
+    buf.append("spreadId").append('=').append(JodaBeanUtils.toString(spreadId)).append(',').append(' ');
+    buf.append("additionalSpread").append('=').append(JodaBeanUtils.toString(additionalSpread)).append(',').append(' ');
+    buf.append("label").append('=').append(JodaBeanUtils.toString(label)).append(',').append(' ');
+    buf.append("date").append('=').append(JodaBeanUtils.toString(date)).append(',').append(' ');
     buf.append("dateOrder").append('=').append(JodaBeanUtils.toString(dateOrder));
     buf.append('}');
     return buf.toString();

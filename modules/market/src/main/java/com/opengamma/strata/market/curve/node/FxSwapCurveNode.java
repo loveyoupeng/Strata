@@ -28,6 +28,7 @@ import org.joda.beans.impl.direct.DirectMetaPropertyMap;
 import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.basics.ReferenceData;
 import com.opengamma.strata.basics.currency.FxRate;
+import com.opengamma.strata.basics.currency.FxRateProvider;
 import com.opengamma.strata.basics.date.Tenor;
 import com.opengamma.strata.collect.ArgChecker;
 import com.opengamma.strata.data.FxRateId;
@@ -197,6 +198,17 @@ public final class FxSwapCurveNode
   @Override
   public ResolvedFxSwapTrade resolvedTrade(double quantity, MarketData marketData, ReferenceData refData) {
     return trade(quantity, marketData, refData).resolve(refData);
+  }
+
+  @Override
+  public ResolvedFxSwapTrade sampleResolvedTrade(
+      LocalDate valuationDate,
+      FxRateProvider fxProvider,
+      ReferenceData refData) {
+
+    double rate = fxProvider.fxRate(template.getCurrencyPair());
+    FxSwapTrade trade = template.createTrade(valuationDate, BuySell.BUY, 1d, rate, 0d, refData);
+    return trade.resolve(refData);
   }
 
   @Override
@@ -371,11 +383,11 @@ public final class FxSwapCurveNode
   public String toString() {
     StringBuilder buf = new StringBuilder(224);
     buf.append("FxSwapCurveNode{");
-    buf.append("template").append('=').append(template).append(',').append(' ');
-    buf.append("fxRateId").append('=').append(fxRateId).append(',').append(' ');
-    buf.append("farForwardPointsId").append('=').append(farForwardPointsId).append(',').append(' ');
-    buf.append("label").append('=').append(label).append(',').append(' ');
-    buf.append("date").append('=').append(date).append(',').append(' ');
+    buf.append("template").append('=').append(JodaBeanUtils.toString(template)).append(',').append(' ');
+    buf.append("fxRateId").append('=').append(JodaBeanUtils.toString(fxRateId)).append(',').append(' ');
+    buf.append("farForwardPointsId").append('=').append(JodaBeanUtils.toString(farForwardPointsId)).append(',').append(' ');
+    buf.append("label").append('=').append(JodaBeanUtils.toString(label)).append(',').append(' ');
+    buf.append("date").append('=').append(JodaBeanUtils.toString(date)).append(',').append(' ');
     buf.append("dateOrder").append('=').append(JodaBeanUtils.toString(dateOrder));
     buf.append('}');
     return buf.toString();

@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -125,6 +126,14 @@ public class GuavateTest {
 
   //-------------------------------------------------------------------------
   @Test
+  public void test_tryCatchToOptional() {
+    assertThat(Guavate.tryCatchToOptional(() -> LocalDate.parse("2020-06-01"))).hasValue(LocalDate.of(2020, 6, 1));
+    assertThat(Guavate.tryCatchToOptional(() -> null)).isEmpty();
+    assertThat(Guavate.tryCatchToOptional(() -> LocalDate.parse("XXX"))).isEmpty();
+  }
+
+  //-------------------------------------------------------------------------
+  @Test
   public void test_firstNonEmpty_supplierMatch1() {
     Optional<Number> test = Guavate.firstNonEmpty(
         () -> Optional.of(Integer.valueOf(1)),
@@ -165,6 +174,14 @@ public class GuavateTest {
   public void test_firstNonEmpty_optionalMatchNone() {
     Optional<Number> test = Guavate.firstNonEmpty(Optional.empty(), Optional.empty());
     assertThat(test).isEqualTo(Optional.empty());
+  }
+
+  //-------------------------------------------------------------------------
+  @Test
+  public void test_first() {
+    assertThat(Guavate.first(ImmutableSet.of())).isEqualTo(Optional.empty());
+    assertThat(Guavate.first(ImmutableSet.of("a"))).hasValue("a");
+    assertThat(Guavate.first(ImmutableSet.of("a", "b"))).hasValue("a");
   }
 
   //-------------------------------------------------------------------------
@@ -440,6 +457,7 @@ public class GuavateTest {
         .isThrownBy(() -> list.stream().collect(Guavate.toImmutableSortedMap(s -> s.length(), s -> "!" + s)));
   }
 
+  @Test
   public void test_toImmutableSortedMap_keyValue_duplicateKeys_merge() {
     List<String> list = Arrays.asList("a", "ab", "c", "bb", "b", "a");
     ImmutableSortedMap<Integer, String> test = list.stream()
@@ -829,6 +847,15 @@ public class GuavateTest {
   public void test_namedThreadFactory_prefix() {
     ThreadFactory threadFactory = Guavate.namedThreadFactory("ThreadMaker").build();
     assertThat(threadFactory.newThread(() -> doNothing()).getName()).isEqualTo("ThreadMaker-0");
+  }
+
+  //-------------------------------------------------------------------------
+  @Test
+  public void test_genericClass() {
+    Class<List<String>> test1 = Guavate.genericClass(List.class);
+    assertThat(test1).isEqualTo(List.class);
+    Class<List<Number>> test2 = Guavate.genericClass(List.class);
+    assertThat(test2).isEqualTo(List.class);
   }
 
   //-------------------------------------------------------------------------

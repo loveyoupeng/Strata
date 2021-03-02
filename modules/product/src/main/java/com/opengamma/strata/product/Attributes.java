@@ -7,7 +7,6 @@ package com.opengamma.strata.product;
 
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.collect.Messages;
 
@@ -25,7 +24,7 @@ public interface Attributes {
    * @return the empty instance
    */
   public static Attributes empty() {
-    return SimpleAttributes.EMPTY;
+    return SimpleAttributes.empty();
   }
 
   /**
@@ -40,7 +39,7 @@ public interface Attributes {
    * @return the instance
    */
   public static <T> Attributes of(AttributeType<T> type, T value) {
-    return new SimpleAttributes(ImmutableMap.of(type, type.toStoredForm(value)));
+    return SimpleAttributes.of(type, value);
   }
 
   //-------------------------------------------------------------------------
@@ -87,6 +86,19 @@ public interface Attributes {
   }
 
   /**
+   * Determines if an attribute associated with the specified type is present <em>and</em> its value is {@code equal}
+   * to the supplied value.
+   *
+   * @param <T>  the type of the attribute value
+   * @param type  the type to find
+   * @param attributeValue  the value to match against
+   * @return true if a matching attribute is present
+   */
+  public default <T> boolean containsAttribute(AttributeType<T> type, T attributeValue) {
+    return findAttribute(type).map(attribute -> attribute.equals(attributeValue)).orElse(false);
+  }
+
+  /**
    * Finds the attribute associated with the specified type.
    * <p>
    * This method obtains the specified attribute.
@@ -112,5 +124,22 @@ public interface Attributes {
    * @return a new instance based on this one with the attribute added
    */
   public abstract <T> Attributes withAttribute(AttributeType<T> type, T value);
+
+  /**
+   * Returns a copy of this instance with the attributes added.
+   * <p>
+   * This returns a new instance with the specified attributes added.
+   * The attributes are added using {@code Map.putAll(type, value)} semantics.
+   * 
+   * @param other  the other instance to copy from
+   * @return an instance based on this one with the attributes from the other instance
+   */
+  public default Attributes withAttributes(Attributes other) {
+    Attributes combined = this;
+    for (AttributeType<?> type : other.getAttributeTypes()) {
+      combined = combined.withAttribute(type.captureWildcard(), other.getAttribute(type));
+    }
+    return combined;
+  }
 
 }

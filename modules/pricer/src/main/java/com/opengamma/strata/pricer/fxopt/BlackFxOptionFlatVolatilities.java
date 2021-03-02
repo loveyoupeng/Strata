@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.ImmutableBean;
@@ -159,6 +160,11 @@ public final class BlackFxOptionFlatVolatilities
   @Override
   public ParameterMetadata getParameterMetadata(int parameterIndex) {
     return curve.getParameterMetadata(parameterIndex);
+  }
+
+  @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return curve.findParameterIndex(metadata);
   }
 
   @Override
@@ -314,8 +320,8 @@ public final class BlackFxOptionFlatVolatilities
   public String toString() {
     StringBuilder buf = new StringBuilder(128);
     buf.append("BlackFxOptionFlatVolatilities{");
-    buf.append("currencyPair").append('=').append(currencyPair).append(',').append(' ');
-    buf.append("valuationDateTime").append('=').append(valuationDateTime).append(',').append(' ');
+    buf.append("currencyPair").append('=').append(JodaBeanUtils.toString(currencyPair)).append(',').append(' ');
+    buf.append("valuationDateTime").append('=').append(JodaBeanUtils.toString(valuationDateTime)).append(',').append(' ');
     buf.append("curve").append('=').append(JodaBeanUtils.toString(curve));
     buf.append('}');
     return buf.toString();

@@ -167,6 +167,8 @@ public final class ParameterizedFunctionalCurveDefinition
               continue loop;
             case EXCEPTION:
               break;  // do nothing yet
+            default:
+              throw new IllegalStateException("Unexpected enum value");
           }
         }
       }
@@ -185,6 +187,8 @@ public final class ParameterizedFunctionalCurveDefinition
               continue loop;
             case EXCEPTION:
               break;  // do nothing yet
+            default:
+              throw new IllegalStateException("Unexpected enum value");
           }
         }
       }
@@ -491,15 +495,15 @@ public final class ParameterizedFunctionalCurveDefinition
   public String toString() {
     StringBuilder buf = new StringBuilder(352);
     buf.append("ParameterizedFunctionalCurveDefinition{");
-    buf.append("name").append('=').append(name).append(',').append(' ');
-    buf.append("xValueType").append('=').append(xValueType).append(',').append(' ');
-    buf.append("yValueType").append('=').append(yValueType).append(',').append(' ');
-    buf.append("dayCount").append('=').append(dayCount).append(',').append(' ');
-    buf.append("nodes").append('=').append(nodes).append(',').append(' ');
-    buf.append("initialGuess").append('=').append(initialGuess).append(',').append(' ');
-    buf.append("parameterMetadata").append('=').append(parameterMetadata).append(',').append(' ');
-    buf.append("valueFunction").append('=').append(valueFunction).append(',').append(' ');
-    buf.append("derivativeFunction").append('=').append(derivativeFunction).append(',').append(' ');
+    buf.append("name").append('=').append(JodaBeanUtils.toString(name)).append(',').append(' ');
+    buf.append("xValueType").append('=').append(JodaBeanUtils.toString(xValueType)).append(',').append(' ');
+    buf.append("yValueType").append('=').append(JodaBeanUtils.toString(yValueType)).append(',').append(' ');
+    buf.append("dayCount").append('=').append(JodaBeanUtils.toString(dayCount)).append(',').append(' ');
+    buf.append("nodes").append('=').append(JodaBeanUtils.toString(nodes)).append(',').append(' ');
+    buf.append("initialGuess").append('=').append(JodaBeanUtils.toString(initialGuess)).append(',').append(' ');
+    buf.append("parameterMetadata").append('=').append(JodaBeanUtils.toString(parameterMetadata)).append(',').append(' ');
+    buf.append("valueFunction").append('=').append(JodaBeanUtils.toString(valueFunction)).append(',').append(' ');
+    buf.append("derivativeFunction").append('=').append(JodaBeanUtils.toString(derivativeFunction)).append(',').append(' ');
     buf.append("sensitivityFunction").append('=').append(JodaBeanUtils.toString(sensitivityFunction));
     buf.append('}');
     return buf.toString();

@@ -6,6 +6,8 @@
 package com.opengamma.strata.product.swap;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.opengamma.strata.basics.currency.Currency.CNY;
+import static com.opengamma.strata.basics.schedule.Frequency.P1W;
 import static com.opengamma.strata.basics.value.ValueSchedule.ALWAYS_0;
 import static com.opengamma.strata.basics.value.ValueSchedule.ALWAYS_1;
 import static com.opengamma.strata.product.swap.IborRateResetMethod.UNWEIGHTED;
@@ -44,6 +46,8 @@ import com.opengamma.strata.basics.date.DaysAdjustment;
 import com.opengamma.strata.basics.index.IborIndex;
 import com.opengamma.strata.basics.index.IborIndexObservation;
 import com.opengamma.strata.basics.index.Index;
+import com.opengamma.strata.basics.schedule.RollConvention;
+import com.opengamma.strata.basics.schedule.RollConventions;
 import com.opengamma.strata.basics.schedule.Schedule;
 import com.opengamma.strata.basics.schedule.SchedulePeriod;
 import com.opengamma.strata.basics.value.ValueSchedule;
@@ -319,7 +323,11 @@ public final class IborRateCalculation
     // resolve against reference data once
     DateAdjuster fixingDateAdjuster = fixingDateOffset.resolve(refData);
     Function<SchedulePeriod, Schedule> resetScheduleFn =
-        getResetPeriods().map(rp -> rp.createSchedule(accrualSchedule.getRollConvention(), refData)).orElse(null);
+        getResetPeriods().map(rp ->
+            accrualSchedule.getFrequency().isMonthBased() && rp.getResetFrequency().isWeekBased() ?
+                rp.createSchedule(RollConventions.NONE, refData, true) :
+                rp.createSchedule(accrualSchedule.getRollConvention(), refData, false))
+            .orElse(null);
     Function<LocalDate, IborIndexObservation> iborObservationFn = index.resolve(refData);
     // build accrual periods
     Optional<SchedulePeriod> scheduleInitialStub = accrualSchedule.getInitialStub();
@@ -775,18 +783,18 @@ public final class IborRateCalculation
   public String toString() {
     StringBuilder buf = new StringBuilder(448);
     buf.append("IborRateCalculation{");
-    buf.append("dayCount").append('=').append(dayCount).append(',').append(' ');
-    buf.append("index").append('=').append(index).append(',').append(' ');
-    buf.append("resetPeriods").append('=').append(resetPeriods).append(',').append(' ');
-    buf.append("fixingRelativeTo").append('=').append(fixingRelativeTo).append(',').append(' ');
-    buf.append("fixingDateOffset").append('=').append(fixingDateOffset).append(',').append(' ');
-    buf.append("negativeRateMethod").append('=').append(negativeRateMethod).append(',').append(' ');
-    buf.append("firstRegularRate").append('=').append(firstRegularRate).append(',').append(' ');
-    buf.append("firstRate").append('=').append(firstRate).append(',').append(' ');
-    buf.append("firstFixingDateOffset").append('=').append(firstFixingDateOffset).append(',').append(' ');
-    buf.append("initialStub").append('=').append(initialStub).append(',').append(' ');
-    buf.append("finalStub").append('=').append(finalStub).append(',').append(' ');
-    buf.append("gearing").append('=').append(gearing).append(',').append(' ');
+    buf.append("dayCount").append('=').append(JodaBeanUtils.toString(dayCount)).append(',').append(' ');
+    buf.append("index").append('=').append(JodaBeanUtils.toString(index)).append(',').append(' ');
+    buf.append("resetPeriods").append('=').append(JodaBeanUtils.toString(resetPeriods)).append(',').append(' ');
+    buf.append("fixingRelativeTo").append('=').append(JodaBeanUtils.toString(fixingRelativeTo)).append(',').append(' ');
+    buf.append("fixingDateOffset").append('=').append(JodaBeanUtils.toString(fixingDateOffset)).append(',').append(' ');
+    buf.append("negativeRateMethod").append('=').append(JodaBeanUtils.toString(negativeRateMethod)).append(',').append(' ');
+    buf.append("firstRegularRate").append('=').append(JodaBeanUtils.toString(firstRegularRate)).append(',').append(' ');
+    buf.append("firstRate").append('=').append(JodaBeanUtils.toString(firstRate)).append(',').append(' ');
+    buf.append("firstFixingDateOffset").append('=').append(JodaBeanUtils.toString(firstFixingDateOffset)).append(',').append(' ');
+    buf.append("initialStub").append('=').append(JodaBeanUtils.toString(initialStub)).append(',').append(' ');
+    buf.append("finalStub").append('=').append(JodaBeanUtils.toString(finalStub)).append(',').append(' ');
+    buf.append("gearing").append('=').append(JodaBeanUtils.toString(gearing)).append(',').append(' ');
     buf.append("spread").append('=').append(JodaBeanUtils.toString(spread));
     buf.append('}');
     return buf.toString();

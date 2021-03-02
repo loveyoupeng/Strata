@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.ImmutableBean;
@@ -173,6 +174,11 @@ public final class NormalIborFutureOptionExpirySimpleMoneynessVolatilities
   }
 
   @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return surface.findParameterIndex(metadata);
+  }
+
+  @Override
   public NormalIborFutureOptionExpirySimpleMoneynessVolatilities withParameter(int parameterIndex, double newValue) {
     return new NormalIborFutureOptionExpirySimpleMoneynessVolatilities(
         index, valuationDateTime, surface.withParameter(parameterIndex, newValue));
@@ -321,8 +327,8 @@ public final class NormalIborFutureOptionExpirySimpleMoneynessVolatilities
   public String toString() {
     StringBuilder buf = new StringBuilder(128);
     buf.append("NormalIborFutureOptionExpirySimpleMoneynessVolatilities{");
-    buf.append("index").append('=').append(index).append(',').append(' ');
-    buf.append("valuationDateTime").append('=').append(valuationDateTime).append(',').append(' ');
+    buf.append("index").append('=').append(JodaBeanUtils.toString(index)).append(',').append(' ');
+    buf.append("valuationDateTime").append('=').append(JodaBeanUtils.toString(valuationDateTime)).append(',').append(' ');
     buf.append("surface").append('=').append(JodaBeanUtils.toString(surface));
     buf.append('}');
     return buf.toString();

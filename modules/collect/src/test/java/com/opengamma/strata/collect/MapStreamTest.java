@@ -42,6 +42,7 @@ import com.opengamma.strata.collect.tuple.Pair;
 public class MapStreamTest {
 
   private final Map<String, Integer> map = ImmutableMap.of("one", 1, "two", 2, "three", 3, "four", 4);
+  private final List<String> list = ImmutableList.of("one", "two", "three", "four");
 
   //-------------------------------------------------------------------------
   @Test
@@ -54,6 +55,26 @@ public class MapStreamTest {
   public void values() {
     List<Integer> result = MapStream.of(map).values().collect(toImmutableList());
     assertThat(result).isEqualTo(ImmutableList.of(1, 2, 3, 4));
+  }
+
+  public void keys_fromList() {
+    List<String> result = MapStream.of(list).keys().collect(toImmutableList());
+    assertThat(result).isEqualTo(list);
+  }
+
+  public void values_fromList() {
+    List<String> result = MapStream.of(list).values().collect(toImmutableList());
+    assertThat(result).isEqualTo(list);
+  }
+
+  public void keys_fromStream() {
+    List<String> result = MapStream.of(list.stream()).keys().collect(toImmutableList());
+    assertThat(result).isEqualTo(list);
+  }
+
+  public void values_fromStream() {
+    List<String> result = MapStream.of(list.stream()).values().collect(toImmutableList());
+    assertThat(result).isEqualTo(list);
   }
 
   //-------------------------------------------------------------------------
@@ -129,7 +150,7 @@ public class MapStreamTest {
 
   @Test
   public void mapToDouble() {
-    double[] expected = new double[]{1d, 2d, 3d, 4d};
+    double[] expected = new double[] {1d, 2d, 3d, 4d};
     double[] result = MapStream.of(map)
         .mapToDouble((k, v) -> (double) v)
         .toArray();
@@ -138,7 +159,7 @@ public class MapStreamTest {
 
   @Test
   public void mapToInt() {
-    int[] expected = new int[]{1, 2, 3, 4};
+    int[] expected = new int[] {1, 2, 3, 4};
     int[] result = MapStream.of(map)
         .mapToInt((k, v) -> v)
         .toArray();
@@ -247,7 +268,7 @@ public class MapStreamTest {
 
   @Test
   public void flatMapToDouble() {
-    double[] expected = new double[]{1d, 1d, 2d, 4d, 3d, 9d, 4d, 16d};
+    double[] expected = new double[] {1d, 1d, 2d, 4d, 3d, 9d, 4d, 16d};
 
     double[] result = MapStream.of(map)
         .flatMapToDouble((k, v) -> DoubleStream.of(v, v * v))
@@ -258,7 +279,7 @@ public class MapStreamTest {
 
   @Test
   public void flatMapToInt() {
-    int[] expected = new int[]{1, 1, 2, 4, 3, 9, 4, 16};
+    int[] expected = new int[] {1, 1, 2, 4, 3, 9, 4, 16};
 
     int[] result = MapStream.of(map)
         .flatMapToInt((k, v) -> IntStream.of(v, v * v))
@@ -508,6 +529,16 @@ public class MapStreamTest {
     Map<String, Integer> result = MapStream.of(map).mapKeys(s -> s.substring(0, 1))
         .toMapGrouping(reducing(0, Integer::sum));
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  public void toMapGroupingRetainsOrder() {
+    Map<String, Integer> map = ImmutableMap.of("d", 1, "dd", 2, "b", 10, "bb", 20, "c", 1);
+    Map<String, Integer> expected = ImmutableMap.of("d", 3, "b", 30, "c", 1);
+    Map<String, Integer> result = MapStream.of(map).mapKeys(s -> s.substring(0, 1))
+        .toMapGrouping(reducing(0, Integer::sum));
+    assertThat(result).isEqualTo(expected);
+    assertThat(result).containsExactlyEntriesOf(expected);
   }
 
   //-------------------------------------------------------------------------

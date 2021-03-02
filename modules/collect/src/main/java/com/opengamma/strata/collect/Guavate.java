@@ -140,6 +140,25 @@ public final class Guavate {
 
   //-------------------------------------------------------------------------
   /**
+   * Wraps a try-catch block around an expression, avoiding exceptions.
+   * <p>
+   * This converts an exception throwing method into an optional returning one by discarding the exception.
+   * In most cases it is better to add a `findXxx()` method to the code you want to call.
+   * 
+   * @param <T>  the type of the result in the optional
+   * @param supplier  the supplier that might throw an exception
+   * @return the value wrapped in an optional, empty if the method returns null or an exception is thrown
+   */
+  public static <T> Optional<T> tryCatchToOptional(Supplier<T> supplier) {
+    try {
+      return Optional.ofNullable(supplier.get());
+    } catch (RuntimeException ex) {
+      return Optional.empty();
+    }
+  }
+
+  //-------------------------------------------------------------------------
+  /**
    * Uses a number of suppliers to create a single optional result.
    * <p>
    * This invokes each supplier in turn until a non empty optional is returned.
@@ -185,6 +204,19 @@ public final class Guavate {
       }
     }
     return Optional.empty();
+  }
+
+  //-------------------------------------------------------------------------
+  /**
+   * Gets the first value from the iterable, returning empty if the iterable is empty.
+   * 
+   * @param <T>  the type of element in the optional
+   * @param iterable  the iterable to query
+   * @return the first value, empty if empty
+   */
+  public static <T> Optional<T> first(Iterable<T> iterable) {
+    Iterator<T> it = iterable.iterator();
+    return it.hasNext() ? Optional.of(it.next()) : Optional.empty();
   }
 
   //-------------------------------------------------------------------------
@@ -290,6 +322,8 @@ public final class Guavate {
    * <p>
    * Each input object is decorated with an {@link ObjIntPair}.
    * The {@code int} is the index of the element in the stream.
+   * <p>
+   * See also {@link MapStream#zipWithIndex(Stream)}.
    *
    * @param <T>  the type of the stream
    * @param stream  the stream to index
@@ -320,6 +354,8 @@ public final class Guavate {
    * Creates a stream that combines two other streams, continuing until either stream ends.
    * <p>
    * Each pair of input objects is combined into a {@link Pair}.
+   * <p>
+   * See also {@link MapStream#zip(Stream, Stream)}.
    *
    * @param <A>  the type of the first stream
    * @param <B>  the type of the second stream
@@ -1218,6 +1254,29 @@ public final class Guavate {
   }
 
   //-------------------------------------------------------------------------
+  /**
+   * Returns a generified {@code Class} instance.
+   * <p>
+   * It is not possible in Java generics to get a {@code Class} object with the desired generic
+   * signature, such as {@code Class<List<String>>}. This method provides a way to get such a value.
+   * The method returns the input parameter, but the compiler sees the result as being a different type.
+   * <p>
+   * Note that the generic part of the resulting type is not checked and can be unsound.
+   * The safest choice is to explicitly specify the type you want, by assigning to a variable or constant:
+   * <pre>
+   *   Class&lt;List&lt;String&gt;&gt; cls = genericClass(List.class);
+   * </pre>
+   *
+   * @param <T> the partially specified generic type, such as {@code List} from a constant such as {@code List.class}
+   * @param <S> the fully specified generic type, such as {@code List<String>}
+   * @param cls  the class instance to base the result in, such as {@code List.class}
+   * @return the class instance from the input, with whatever generic parameter is desired
+   */
+  @SuppressWarnings("unchecked")
+  public static <T, S extends T> Class<S> genericClass(Class<T> cls) {
+    return (Class<S>) cls;
+  }
+
   /**
    * Finds the caller class.
    * <p>

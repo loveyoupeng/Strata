@@ -117,10 +117,19 @@ public final class InflationNodalCurve
       SeasonalityDefinition seasonalityDefinition) {
 
     YearMonth valuationMonth = YearMonth.from(valuationDate);
-    ArgChecker.isTrue(lastMonth.isBefore(valuationMonth), "Last fixing month must be before valuation date");
+    ArgChecker.isTrue(
+        lastMonth.isBefore(valuationMonth),
+        "Last fixing month {} for curve '{}' must be before valuation date {}",
+        lastMonth,
+        curveWithoutFixing.getName().getName(),
+        valuationDate);
     double nbMonth = valuationMonth.until(lastMonth, MONTHS);
     DoubleArray x = curveWithoutFixing.getXValues();
-    ArgChecker.isTrue(nbMonth < x.get(0), "The first estimation month should be after the last known index fixing");
+    ArgChecker.isTrue(
+        nbMonth < x.get(0),
+        "First estimation month for curve '{}' must be after the last fixing month {}",
+        curveWithoutFixing.getName().getName(),
+        lastMonth);
     NodalCurve extendedCurve = curveWithoutFixing.withNode(nbMonth, lastFixingValue, ParameterMetadata.empty());
     double[] seasonalityCompoundedArray = new double[12];
     int lastMonthIndex = lastMonth.getMonth().getValue() - 1;
@@ -152,7 +161,8 @@ public final class InflationNodalCurve
     this.yFixing = curve.getYValues().get(0);
     int i = seasonalityIndex(xFixing);
     ArgChecker.isTrue(
-        adjustmentType.applyShift(yFixing, seasonality.get(i)) - yFixing < 1.0E-10, "Fixing value should be unadjusted");
+        Math.abs(adjustmentType.applyShift(yFixing, seasonality.get(i)) - yFixing) < 1e-12,
+        "Fixing value should be unadjusted");
     this.adjustmentType = adjustmentType;
   }
 
@@ -343,8 +353,8 @@ public final class InflationNodalCurve
   public String toString() {
     StringBuilder buf = new StringBuilder(128);
     buf.append("InflationNodalCurve{");
-    buf.append("underlying").append('=').append(underlying).append(',').append(' ');
-    buf.append("seasonality").append('=').append(seasonality).append(',').append(' ');
+    buf.append("underlying").append('=').append(JodaBeanUtils.toString(underlying)).append(',').append(' ');
+    buf.append("seasonality").append('=').append(JodaBeanUtils.toString(seasonality)).append(',').append(' ');
     buf.append("adjustmentType").append('=').append(JodaBeanUtils.toString(adjustmentType));
     buf.append('}');
     return buf.toString();

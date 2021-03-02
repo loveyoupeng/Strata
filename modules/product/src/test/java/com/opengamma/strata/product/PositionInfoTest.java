@@ -11,7 +11,7 @@ import static com.opengamma.strata.collect.TestHelper.coverImmutableBean;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import com.opengamma.strata.basics.StandardId;
 
@@ -50,6 +50,20 @@ public class PositionInfoTest {
   }
 
   @Test
+  public void test_builder_with_bulk() {
+    Attributes override = Attributes.of(AttributeType.DESCRIPTION, "B").withAttribute(AttributeType.NAME, "C");
+    PositionInfo test = PositionInfo.builder()
+        .build()
+        .withId(ID)
+        .withAttribute(AttributeType.DESCRIPTION, "A")
+        .withAttributes(override);
+    assertThat(test.getId()).hasValue(ID);
+    assertThat(test.getAttributeTypes()).containsOnly(AttributeType.DESCRIPTION, AttributeType.NAME);
+    assertThat(test.getAttribute(AttributeType.DESCRIPTION)).isEqualTo("B");
+    assertThat(test.getAttribute(AttributeType.NAME)).isEqualTo("C");
+  }
+
+  @Test
   public void test_combinedWith() {
     PositionInfo base = PositionInfo.builder()
         .id(ID)
@@ -65,6 +79,43 @@ public class PositionInfoTest {
     assertThat(test.getAttributeTypes()).containsOnly(AttributeType.DESCRIPTION, AttributeType.NAME);
     assertThat(test.getAttributes())
         .containsEntry(AttributeType.DESCRIPTION, "A")
+        .containsEntry(AttributeType.NAME, "B");
+  }
+
+  @Test
+  public void test_overrideWith() {
+    PositionInfo base = PositionInfo.builder()
+        .id(ID)
+        .addAttribute(AttributeType.DESCRIPTION, "A")
+        .build();
+    PositionInfo other = PositionInfo.builder()
+        .id(ID2)
+        .addAttribute(AttributeType.DESCRIPTION, "B")
+        .addAttribute(AttributeType.NAME, "B")
+        .build();
+    PositionInfo test = base.overrideWith(other);
+    assertThat(test.getId()).hasValue(ID2);
+    assertThat(test.getAttributeTypes()).containsOnly(AttributeType.DESCRIPTION, AttributeType.NAME);
+    assertThat(test.getAttributes())
+        .containsEntry(AttributeType.DESCRIPTION, "B")
+        .containsEntry(AttributeType.NAME, "B");
+  }
+
+  @Test
+  public void test_overrideWith_otherType() {
+    PositionInfo base = PositionInfo.builder()
+        .id(ID)
+        .addAttribute(AttributeType.DESCRIPTION, "A")
+        .build();
+    PortfolioItemInfo other = PortfolioItemInfo.empty()
+        .withId(ID2)
+        .withAttribute(AttributeType.DESCRIPTION, "B")
+        .withAttribute(AttributeType.NAME, "B");
+    PositionInfo test = base.overrideWith(other);
+    assertThat(test.getId()).hasValue(ID2);
+    assertThat(test.getAttributeTypes()).containsOnly(AttributeType.DESCRIPTION, AttributeType.NAME);
+    assertThat(test.getAttributes())
+        .containsEntry(AttributeType.DESCRIPTION, "B")
         .containsEntry(AttributeType.NAME, "B");
   }
 

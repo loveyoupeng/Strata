@@ -5,6 +5,8 @@
  */
 package com.opengamma.strata.measure.swaption;
 
+import static com.opengamma.strata.market.ValueType.NORMAL_VOLATILITY;
+
 import java.time.LocalDate;
 
 import com.opengamma.strata.basics.currency.CurrencyAmount;
@@ -211,6 +213,44 @@ final class SwaptionMeasureCalculations {
           trade, ratesProvider, (SabrSwaptionVolatilities) volatilities);
     }
     return tradePricer.presentValueSensitivityRatesStickyStrike(trade, ratesProvider, volatilities);
+  }
+
+  //-------------------------------------------------------------------------
+  // calculates normal vega for all scenarios
+  ScenarioArray<CurrencyParameterSensitivities> vegaMarketQuoteBucketed(
+      ResolvedSwaptionTrade trade,
+      RatesScenarioMarketData ratesMarketData,
+      SwaptionScenarioMarketData swaptionMarketData) {
+
+    IborIndex index = trade.getProduct().getIndex();
+    return ScenarioArray.of(
+        ratesMarketData.getScenarioCount(),
+        i -> vegaMarketQuoteBucketed(
+            trade,
+            ratesMarketData.scenario(i).ratesProvider(),
+            swaptionMarketData.scenario(i).volatilities(index)));
+  }
+
+  //  normal vega for one scenario
+  CurrencyParameterSensitivities vegaMarketQuoteBucketed(
+      ResolvedSwaptionTrade trade,
+      RatesProvider ratesProvider,
+      SwaptionVolatilities volatilities) {
+
+    if (!volatilities.getVolatilityType().equals(NORMAL_VOLATILITY)) {
+      throw new IllegalArgumentException("Vega calculation requires normal volatilities");
+    }
+    PointSensitivities pointSensitivity = pointSensitivityVega(trade, ratesProvider, volatilities);
+    return volatilities.parameterSensitivity(pointSensitivity);
+  }
+
+  //  normal vega point sensitivity
+  private PointSensitivities pointSensitivityVega(
+      ResolvedSwaptionTrade trade,
+      RatesProvider ratesProvider,
+      SwaptionVolatilities volatilities) {
+
+    return tradePricer.presentValueSensitivityModelParamsVolatility(trade, ratesProvider, volatilities);
   }
 
   //-------------------------------------------------------------------------

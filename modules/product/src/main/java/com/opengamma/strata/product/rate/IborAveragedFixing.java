@@ -104,6 +104,7 @@ public final class IborAveragedFixing
       IborIndexObservation observation,
       LocalDate startDate,
       LocalDate endDate) {
+
     return ofDaysInResetPeriod(observation, startDate, endDate, null);
   }
 
@@ -125,6 +126,7 @@ public final class IborAveragedFixing
       LocalDate startDate,
       LocalDate endDate,
       Double fixedRate) {
+
     ArgChecker.notNull(observation, "observation");
     ArgChecker.notNull(startDate, "startDate");
     ArgChecker.notNull(endDate, "endDate");
@@ -255,8 +257,8 @@ public final class IborAveragedFixing
   public String toString() {
     StringBuilder buf = new StringBuilder(128);
     buf.append("IborAveragedFixing{");
-    buf.append("observation").append('=').append(observation).append(',').append(' ');
-    buf.append("fixedRate").append('=').append(fixedRate).append(',').append(' ');
+    buf.append("observation").append('=').append(JodaBeanUtils.toString(observation)).append(',').append(' ');
+    buf.append("fixedRate").append('=').append(JodaBeanUtils.toString(fixedRate)).append(',').append(' ');
     buf.append("weight").append('=').append(JodaBeanUtils.toString(weight));
     buf.append('}');
     return buf.toString();

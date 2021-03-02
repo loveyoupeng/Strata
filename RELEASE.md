@@ -7,7 +7,7 @@ The release process for Strata is as follows:
 
 1. Check out the master branch and ensure there are no local changes
 
-1. To change the version number of the released version, change the snapshot version: 
+1. If necessary, change the version number that is to be released next by changing the snapshot version: 
 `mvn versions:set -DgenerateBackupPoms=false -DartifactId=* -DgroupId=com.opengamma.strata`
 
 1. Update the version in README.md, commit and push
@@ -19,9 +19,9 @@ The release process for Strata is as follows:
 
 1. Update docs website
 
-1. Add Javadoc to docs website. Build on **Java 11**, delete old Javadoc, copy in new Javadoc:  
+1. Add Javadoc to docs website. Build on **Java 11**, not later or earlier versions: 
 `mvn package -Ddist -DskipTests -DadditionalJOption=--no-module-directories`
-(Note, this needs plugin v3.0.1 and the build does not fully complete but does generate the Javadoc)
+Delete the old Javadoc, copy in new Javadoc.
 
 1. Add forum post
 

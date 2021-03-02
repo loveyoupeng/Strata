@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.BeanBuilder;
@@ -202,6 +203,11 @@ public final class IsdaCreditDiscountFactors
   }
 
   @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return curve.findParameterIndex(metadata);
+  }
+
+  @Override
   public IsdaCreditDiscountFactors withParameter(int parameterIndex, double newValue) {
     return withCurve(curve.withParameter(parameterIndex, newValue));
   }
@@ -352,8 +358,8 @@ public final class IsdaCreditDiscountFactors
   public String toString() {
     StringBuilder buf = new StringBuilder(128);
     buf.append("IsdaCreditDiscountFactors{");
-    buf.append("currency").append('=').append(currency).append(',').append(' ');
-    buf.append("valuationDate").append('=').append(valuationDate).append(',').append(' ');
+    buf.append("currency").append('=').append(JodaBeanUtils.toString(currency)).append(',').append(' ');
+    buf.append("valuationDate").append('=').append(JodaBeanUtils.toString(valuationDate)).append(',').append(' ');
     buf.append("curve").append('=').append(JodaBeanUtils.toString(curve));
     buf.append('}');
     return buf.toString();

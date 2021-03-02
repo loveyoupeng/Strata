@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.BeanBuilder;
@@ -141,6 +142,11 @@ public final class ZeroRateDiscountFactors
   @Override
   public ParameterMetadata getParameterMetadata(int parameterIndex) {
     return curve.getParameterMetadata(parameterIndex);
+  }
+
+  @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return curve.findParameterIndex(metadata);
   }
 
   @Override
@@ -288,8 +294,8 @@ public final class ZeroRateDiscountFactors
   public String toString() {
     StringBuilder buf = new StringBuilder(128);
     buf.append("ZeroRateDiscountFactors{");
-    buf.append("currency").append('=').append(currency).append(',').append(' ');
-    buf.append("valuationDate").append('=').append(valuationDate).append(',').append(' ');
+    buf.append("currency").append('=').append(JodaBeanUtils.toString(currency)).append(',').append(' ');
+    buf.append("valuationDate").append('=').append(JodaBeanUtils.toString(valuationDate)).append(',').append(' ');
     buf.append("curve").append('=').append(JodaBeanUtils.toString(curve));
     buf.append('}');
     return buf.toString();

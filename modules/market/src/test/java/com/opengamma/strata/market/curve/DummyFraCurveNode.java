@@ -21,6 +21,7 @@ import org.joda.beans.impl.light.LightMetaBean;
 
 import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.basics.ReferenceData;
+import com.opengamma.strata.basics.currency.FxRateProvider;
 import com.opengamma.strata.basics.date.HolidayCalendars;
 import com.opengamma.strata.basics.index.IborIndex;
 import com.opengamma.strata.data.MarketData;
@@ -107,6 +108,15 @@ public final class DummyFraCurveNode
   @Override
   public DummyFraTrade resolvedTrade(double quantity, MarketData marketData, ReferenceData refData) {
     return trade(quantity, marketData, refData);
+  }
+
+  @Override
+  public DummyFraTrade sampleResolvedTrade(
+      LocalDate valuationDate,
+      FxRateProvider fxProvider,
+      ReferenceData refData) {
+
+    return DummyFraTrade.of(valuationDate, spread);
   }
 
   @Override
@@ -270,11 +280,11 @@ public final class DummyFraCurveNode
   public String toString() {
     StringBuilder buf = new StringBuilder(224);
     buf.append("DummyFraCurveNode{");
-    buf.append("periodToStart").append('=').append(periodToStart).append(',').append(' ');
-    buf.append("periodToEnd").append('=').append(periodToEnd).append(',').append(' ');
-    buf.append("rateId").append('=').append(rateId).append(',').append(' ');
-    buf.append("spread").append('=').append(spread).append(',').append(' ');
-    buf.append("label").append('=').append(label).append(',').append(' ');
+    buf.append("periodToStart").append('=').append(JodaBeanUtils.toString(periodToStart)).append(',').append(' ');
+    buf.append("periodToEnd").append('=').append(JodaBeanUtils.toString(periodToEnd)).append(',').append(' ');
+    buf.append("rateId").append('=').append(JodaBeanUtils.toString(rateId)).append(',').append(' ');
+    buf.append("spread").append('=').append(JodaBeanUtils.toString(spread)).append(',').append(' ');
+    buf.append("label").append('=').append(JodaBeanUtils.toString(label)).append(',').append(' ');
     buf.append("order").append('=').append(JodaBeanUtils.toString(order));
     buf.append('}');
     return buf.toString();

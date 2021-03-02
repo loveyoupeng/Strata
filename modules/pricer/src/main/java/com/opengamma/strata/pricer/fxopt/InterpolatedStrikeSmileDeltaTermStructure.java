@@ -5,6 +5,7 @@
  */
 package com.opengamma.strata.pricer.fxopt;
 
+import static com.opengamma.strata.collect.Guavate.toImmutableList;
 import static com.opengamma.strata.market.curve.interpolator.CurveExtrapolators.FLAT;
 import static com.opengamma.strata.market.curve.interpolator.CurveInterpolators.LINEAR;
 import static com.opengamma.strata.market.curve.interpolator.CurveInterpolators.TIME_SQUARE;
@@ -14,6 +15,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import org.joda.beans.Bean;
 import org.joda.beans.BeanBuilder;
@@ -31,6 +33,7 @@ import org.joda.beans.impl.direct.DirectPrivateBeanBuilder;
 
 import com.google.common.collect.ImmutableList;
 import com.opengamma.strata.basics.date.DayCount;
+import com.opengamma.strata.basics.date.Tenor;
 import com.opengamma.strata.collect.ArgChecker;
 import com.opengamma.strata.collect.array.DoubleArray;
 import com.opengamma.strata.collect.array.DoubleMatrix;
@@ -127,7 +130,7 @@ public final class InterpolatedStrikeSmileDeltaTermStructure
       List<SmileDeltaParameters> volatilityTerm,
       DayCount dayCount) {
 
-    return of(volatilityTerm, dayCount, FLAT, TIME_SQUARE, FLAT, FLAT, LINEAR, FLAT);
+    return of(volatilityTerm, dayCount, TIME_SQUARE, FLAT, FLAT, LINEAR, FLAT, FLAT);
   }
 
   /**
@@ -153,11 +156,11 @@ public final class InterpolatedStrikeSmileDeltaTermStructure
     return of(
         volatilityTerm,
         dayCount,
-        FLAT,
         TIME_SQUARE,
         FLAT,
-        strikeExtrapolatorLeft,
+        FLAT,
         strikeInterpolator,
+        strikeExtrapolatorLeft,
         strikeExtrapolatorRight);
   }
 
@@ -174,7 +177,9 @@ public final class InterpolatedStrikeSmileDeltaTermStructure
    * @param strikeInterpolator  interpolator used in the strike dimension
    * @param strikeExtrapolatorRight  right extrapolator used in the strike dimension
    * @return the instance
+   * @deprecated Use variant with correct interpolator/extrapolator order
    */
+  @Deprecated
   public static InterpolatedStrikeSmileDeltaTermStructure of(
       List<SmileDeltaParameters> volatilityTerm,
       DayCount dayCount,
@@ -183,6 +188,41 @@ public final class InterpolatedStrikeSmileDeltaTermStructure
       CurveExtrapolator timeExtrapolatorRight,
       CurveExtrapolator strikeExtrapolatorLeft,
       CurveInterpolator strikeInterpolator,
+      CurveExtrapolator strikeExtrapolatorRight) {
+
+    return of(
+        volatilityTerm,
+        dayCount,
+        timeInterpolator,
+        timeExtrapolatorLeft,
+        timeExtrapolatorRight,
+        strikeInterpolator,
+        strikeExtrapolatorLeft,
+        strikeExtrapolatorRight);
+  }
+
+  /**
+   * Obtains volatility term structure from a set of smile descriptions 
+   * with interpolator and extrapolators fully specified.
+   * 
+   * @param volatilityTerm  the volatility descriptions
+   * @param dayCount  the day count used for the expiry year-fraction
+   * @param timeInterpolator  interpolator used in the time dimension
+   * @param timeExtrapolatorLeft  left extrapolator used in the time dimension
+   * @param timeExtrapolatorRight  right extrapolator used in the time dimension
+   * @param strikeInterpolator  interpolator used in the strike dimension
+   * @param strikeExtrapolatorLeft  left extrapolator used in the strike dimension
+   * @param strikeExtrapolatorRight  right extrapolator used in the strike dimension
+   * @return the instance
+   */
+  public static InterpolatedStrikeSmileDeltaTermStructure of(
+      List<SmileDeltaParameters> volatilityTerm,
+      DayCount dayCount,
+      CurveInterpolator timeInterpolator,
+      CurveExtrapolator timeExtrapolatorLeft,
+      CurveExtrapolator timeExtrapolatorRight,
+      CurveInterpolator strikeInterpolator,
+      CurveExtrapolator strikeExtrapolatorLeft,
       CurveExtrapolator strikeExtrapolatorRight) {
 
     ArgChecker.notEmpty(volatilityTerm, "volatilityTerm");
@@ -605,6 +645,13 @@ public final class InterpolatedStrikeSmileDeltaTermStructure
     return expiries;
   }
 
+  @Override
+  public List<Optional<Tenor>> getExpiryTenors() {
+    return volatilityTerm.stream()
+        .map(smileDeltaParams -> smileDeltaParams.getExpiryTenor())
+        .collect(toImmutableList());
+  }
+
   //-------------------------------------------------------------------------
   @Override
   public double volatility(double time, double strike, double forward) {
@@ -813,13 +860,13 @@ public final class InterpolatedStrikeSmileDeltaTermStructure
   public String toString() {
     StringBuilder buf = new StringBuilder(288);
     buf.append("InterpolatedStrikeSmileDeltaTermStructure{");
-    buf.append("volatilityTerm").append('=').append(volatilityTerm).append(',').append(' ');
-    buf.append("dayCount").append('=').append(dayCount).append(',').append(' ');
-    buf.append("timeInterpolator").append('=').append(timeInterpolator).append(',').append(' ');
-    buf.append("timeExtrapolatorLeft").append('=').append(timeExtrapolatorLeft).append(',').append(' ');
-    buf.append("timeExtrapolatorRight").append('=').append(timeExtrapolatorRight).append(',').append(' ');
-    buf.append("strikeInterpolator").append('=').append(strikeInterpolator).append(',').append(' ');
-    buf.append("strikeExtrapolatorLeft").append('=').append(strikeExtrapolatorLeft).append(',').append(' ');
+    buf.append("volatilityTerm").append('=').append(JodaBeanUtils.toString(volatilityTerm)).append(',').append(' ');
+    buf.append("dayCount").append('=').append(JodaBeanUtils.toString(dayCount)).append(',').append(' ');
+    buf.append("timeInterpolator").append('=').append(JodaBeanUtils.toString(timeInterpolator)).append(',').append(' ');
+    buf.append("timeExtrapolatorLeft").append('=').append(JodaBeanUtils.toString(timeExtrapolatorLeft)).append(',').append(' ');
+    buf.append("timeExtrapolatorRight").append('=').append(JodaBeanUtils.toString(timeExtrapolatorRight)).append(',').append(' ');
+    buf.append("strikeInterpolator").append('=').append(JodaBeanUtils.toString(strikeInterpolator)).append(',').append(' ');
+    buf.append("strikeExtrapolatorLeft").append('=').append(JodaBeanUtils.toString(strikeExtrapolatorLeft)).append(',').append(' ');
     buf.append("strikeExtrapolatorRight").append('=').append(JodaBeanUtils.toString(strikeExtrapolatorRight));
     buf.append('}');
     return buf.toString();

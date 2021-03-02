@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.BeanBuilder;
@@ -163,6 +164,11 @@ public final class NormalSwaptionExpiryTenorVolatilities
   @Override
   public ParameterMetadata getParameterMetadata(int parameterIndex) {
     return surface.getParameterMetadata(parameterIndex);
+  }
+
+  @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return surface.findParameterIndex(metadata);
   }
 
   @Override
@@ -330,8 +336,8 @@ public final class NormalSwaptionExpiryTenorVolatilities
   public String toString() {
     StringBuilder buf = new StringBuilder(128);
     buf.append("NormalSwaptionExpiryTenorVolatilities{");
-    buf.append("convention").append('=').append(convention).append(',').append(' ');
-    buf.append("valuationDateTime").append('=').append(valuationDateTime).append(',').append(' ');
+    buf.append("convention").append('=').append(JodaBeanUtils.toString(convention)).append(',').append(' ');
+    buf.append("valuationDateTime").append('=').append(JodaBeanUtils.toString(valuationDateTime)).append(',').append(' ');
     buf.append("surface").append('=').append(JodaBeanUtils.toString(surface));
     buf.append('}');
     return buf.toString();

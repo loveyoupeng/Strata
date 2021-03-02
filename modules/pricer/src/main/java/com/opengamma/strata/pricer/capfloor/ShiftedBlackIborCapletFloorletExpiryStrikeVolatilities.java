@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.BeanBuilder;
@@ -197,6 +198,11 @@ public final class ShiftedBlackIborCapletFloorletExpiryStrikeVolatilities
   }
 
   @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return surface.findParameterIndex(metadata);
+  }
+
+  @Override
   public ShiftedBlackIborCapletFloorletExpiryStrikeVolatilities withParameter(int parameterIndex, double newValue) {
     return new ShiftedBlackIborCapletFloorletExpiryStrikeVolatilities(
         index, valuationDateTime, surface.withParameter(parameterIndex, newValue), shiftCurve);
@@ -378,9 +384,9 @@ public final class ShiftedBlackIborCapletFloorletExpiryStrikeVolatilities
   public String toString() {
     StringBuilder buf = new StringBuilder(160);
     buf.append("ShiftedBlackIborCapletFloorletExpiryStrikeVolatilities{");
-    buf.append("index").append('=').append(index).append(',').append(' ');
-    buf.append("valuationDateTime").append('=').append(valuationDateTime).append(',').append(' ');
-    buf.append("surface").append('=').append(surface).append(',').append(' ');
+    buf.append("index").append('=').append(JodaBeanUtils.toString(index)).append(',').append(' ');
+    buf.append("valuationDateTime").append('=').append(JodaBeanUtils.toString(valuationDateTime)).append(',').append(' ');
+    buf.append("surface").append('=').append(JodaBeanUtils.toString(surface)).append(',').append(' ');
     buf.append("shiftCurve").append('=').append(JodaBeanUtils.toString(shiftCurve));
     buf.append('}');
     return buf.toString();

@@ -12,6 +12,7 @@ import static com.opengamma.strata.basics.currency.Currency.CLP;
 import static com.opengamma.strata.basics.currency.Currency.DKK;
 import static com.opengamma.strata.basics.currency.Currency.EUR;
 import static com.opengamma.strata.basics.currency.Currency.GBP;
+import static com.opengamma.strata.basics.currency.Currency.HKD;
 import static com.opengamma.strata.basics.currency.Currency.INR;
 import static com.opengamma.strata.basics.currency.Currency.NZD;
 import static com.opengamma.strata.basics.currency.Currency.PLN;
@@ -165,6 +166,19 @@ public class OvernightIndexTest {
     assertThat(test.toString()).isEqualTo("USD-SOFR");
   }
 
+  @Test
+  public void test_usdAmeribor() {
+    OvernightIndex test = OvernightIndex.of("USD-AMERIBOR");
+    assertThat(test.getName()).isEqualTo("USD-AMERIBOR");
+    assertThat(test.getCurrency()).isEqualTo(USD);
+    assertThat(test.isActive()).isEqualTo(true);
+    assertThat(test.getFixingCalendar()).isEqualTo(USNY);
+    assertThat(test.getPublicationDateOffset()).isEqualTo(0);
+    assertThat(test.getEffectiveDateOffset()).isEqualTo(0);
+    assertThat(test.getDayCount()).isEqualTo(ACT_360);
+    assertThat(test.toString()).isEqualTo("USD-AMERIBOR");
+  }
+
   //-------------------------------------------------------------------------
 
   @Test
@@ -181,16 +195,18 @@ public class OvernightIndexTest {
   }
 
   @Test
-  public void test_eurEster() {
-    OvernightIndex test = OvernightIndex.of("EUR-ESTER");
-    assertThat(test.getName()).isEqualTo("EUR-ESTER");
+  public void test_eurEstr() {
+    OvernightIndex test = OvernightIndex.of("EUR-ESTR");
+    assertThat(test.getName()).isEqualTo("EUR-ESTR");
     assertThat(test.getCurrency()).isEqualTo(EUR);
     assertThat(test.isActive()).isEqualTo(true);
     assertThat(test.getFixingCalendar()).isEqualTo(EUTA);
     assertThat(test.getPublicationDateOffset()).isEqualTo(1);
     assertThat(test.getEffectiveDateOffset()).isEqualTo(0);
     assertThat(test.getDayCount()).isEqualTo(ACT_360);
-    assertThat(test.toString()).isEqualTo("EUR-ESTER");
+    assertThat(test.toString()).isEqualTo("EUR-ESTR");
+    // old name
+    assertThat(OvernightIndex.of("EUR-ESTER")).isEqualTo(test);
   }
 
   //-------------------------------------------------------------------------
@@ -247,6 +263,22 @@ public class OvernightIndexTest {
     assertThat(test.getDayCount()).isEqualTo(ACT_360);
     assertThat(test.getDefaultFixedLegDayCount()).isEqualTo(ACT_360);
     assertThat(test.toString()).isEqualTo("DKK-TNR");
+  }
+
+  @Test
+  public void test_hkdOis() {
+    OvernightIndex test = OvernightIndex.of("HKD-HONIA");
+    assertThat(test.getName()).isEqualTo("HKD-HONIA");
+    assertThat(test.getCurrency()).isEqualTo(HKD);
+    assertThat(test.isActive()).isEqualTo(true);
+    assertThat(test.getFixingCalendar()).isEqualTo(HolidayCalendarId.of("HKHK"));
+    assertThat(test.getPublicationDateOffset()).isEqualTo(0);
+    assertThat(test.getEffectiveDateOffset()).isEqualTo(0);
+    assertThat(test.getDayCount()).isEqualTo(ACT_365F);
+    assertThat(test.getDefaultFixedLegDayCount()).isEqualTo(ACT_365F);
+    assertThat(test.toString()).isEqualTo("HKD-HONIA");
+    // alternative name
+    assertThat(OvernightIndex.of("HKD-HONIX")).isEqualTo(test);
   }
 
   @Test
@@ -307,17 +339,32 @@ public class OvernightIndexTest {
 
   @Test
   public void test_sgdSonar() {
-    HolidayCalendarId SGSI = HolidayCalendarId.of("SGSI");
+    HolidayCalendarId cal = HolidayCalendarId.of("SGSI");
     OvernightIndex test = OvernightIndex.of("SGD-SONAR");
     assertThat(test.getName()).isEqualTo("SGD-SONAR");
     assertThat(test.getCurrency()).isEqualTo(SGD);
     assertThat(test.isActive()).isEqualTo(true);
-    assertThat(test.getFixingCalendar()).isEqualTo(SGSI);
+    assertThat(test.getFixingCalendar()).isEqualTo(cal);
     assertThat(test.getPublicationDateOffset()).isEqualTo(0);
     assertThat(test.getEffectiveDateOffset()).isEqualTo(0);
     assertThat(test.getDayCount()).isEqualTo(ACT_365F);
     assertThat(test.getDefaultFixedLegDayCount()).isEqualTo(ACT_365F);
     assertThat(test.toString()).isEqualTo("SGD-SONAR");
+  }
+
+  @Test
+  public void test_sgdSora() {
+    HolidayCalendarId cal = HolidayCalendarId.of("SGSI");
+    OvernightIndex test = OvernightIndex.of("SGD-SORA");
+    assertThat(test.getName()).isEqualTo("SGD-SORA");
+    assertThat(test.getCurrency()).isEqualTo(SGD);
+    assertThat(test.isActive()).isEqualTo(true);
+    assertThat(test.getFixingCalendar()).isEqualTo(cal);
+    assertThat(test.getPublicationDateOffset()).isEqualTo(1);
+    assertThat(test.getEffectiveDateOffset()).isEqualTo(0);
+    assertThat(test.getDayCount()).isEqualTo(ACT_365F);
+    assertThat(test.getDefaultFixedLegDayCount()).isEqualTo(ACT_365F);
+    assertThat(test.toString()).isEqualTo("SGD-SORA");
   }
 
   @Test

@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.joda.beans.Bean;
 import org.joda.beans.BeanBuilder;
@@ -159,6 +160,11 @@ public final class NormalIborCapletFloorletExpiryFlatVolatilities
   @Override
   public ParameterMetadata getParameterMetadata(int parameterIndex) {
     return curve.getParameterMetadata(parameterIndex);
+  }
+
+  @Override
+  public OptionalInt findParameterIndex(ParameterMetadata metadata) {
+    return curve.findParameterIndex(metadata);
   }
 
   @Override
@@ -321,8 +327,8 @@ public final class NormalIborCapletFloorletExpiryFlatVolatilities
   public String toString() {
     StringBuilder buf = new StringBuilder(128);
     buf.append("NormalIborCapletFloorletExpiryFlatVolatilities{");
-    buf.append("index").append('=').append(index).append(',').append(' ');
-    buf.append("valuationDateTime").append('=').append(valuationDateTime).append(',').append(' ');
+    buf.append("index").append('=').append(JodaBeanUtils.toString(index)).append(',').append(' ');
+    buf.append("valuationDateTime").append('=').append(JodaBeanUtils.toString(valuationDateTime)).append(',').append(' ');
     buf.append("curve").append('=').append(JodaBeanUtils.toString(curve));
     buf.append('}');
     return buf.toString();

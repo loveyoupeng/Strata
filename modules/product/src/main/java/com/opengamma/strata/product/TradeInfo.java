@@ -114,6 +114,19 @@ public final class TradeInfo
   }
 
   /**
+   * Obtains an instance based on the supplied info.
+   *
+   * @param info  the base info
+   * @return the trade information
+   */
+  public static TradeInfo from(PortfolioItemInfo info) {
+    if (info instanceof TradeInfo) {
+      return ((TradeInfo) info);
+    }
+    return empty().combinedWith(info);
+  }
+
+  /**
    * Returns a builder used to create an instance of the bean.
    * 
    * @return the builder, not null
@@ -154,6 +167,15 @@ public final class TradeInfo
   }
 
   @Override
+  public TradeInfo withAttributes(Attributes other) {
+    TradeInfoBuilder builder = toBuilder();
+    for (AttributeType<?> attrType : other.getAttributeTypes()) {
+      builder.addAttribute(attrType.captureWildcard(), other.getAttribute(attrType));
+    }
+    return builder.build();
+  }
+
+  @Override
   public TradeInfo combinedWith(PortfolioItemInfo other) {
     TradeInfoBuilder builder = toBuilder();
     other.getId().filter(ignored -> this.id == null).ifPresent(builder::id);
@@ -173,9 +195,27 @@ public final class TradeInfo
     return builder.build();
   }
 
+  @Override
+  public TradeInfo overrideWith(PortfolioItemInfo other) {
+    TradeInfoBuilder builder = toBuilder();
+    other.getId().ifPresent(builder::id);
+    if (other instanceof TradeInfo) {
+      TradeInfo otherInfo = (TradeInfo) other;
+      otherInfo.getCounterparty().ifPresent(builder::counterparty);
+      otherInfo.getTradeDate().ifPresent(builder::tradeDate);
+      otherInfo.getTradeTime().ifPresent(builder::tradeTime);
+      otherInfo.getZone().ifPresent(builder::zone);
+      otherInfo.getSettlementDate().ifPresent(builder::settlementDate);
+    }
+    for (AttributeType<?> attrType : other.getAttributeTypes()) {
+      builder.addAttribute(attrType.captureWildcard(), other.getAttribute(attrType));
+    }
+    return builder.build();
+  }
+
   /**
    * Returns a builder populated with the values of this instance.
-   * 
+   *
    * @return a builder populated with the values of this instance
    */
   public TradeInfoBuilder toBuilder() {
@@ -344,12 +384,12 @@ public final class TradeInfo
   public String toString() {
     StringBuilder buf = new StringBuilder(256);
     buf.append("TradeInfo{");
-    buf.append("id").append('=').append(id).append(',').append(' ');
-    buf.append("counterparty").append('=').append(counterparty).append(',').append(' ');
-    buf.append("tradeDate").append('=').append(tradeDate).append(',').append(' ');
-    buf.append("tradeTime").append('=').append(tradeTime).append(',').append(' ');
-    buf.append("zone").append('=').append(zone).append(',').append(' ');
-    buf.append("settlementDate").append('=').append(settlementDate).append(',').append(' ');
+    buf.append("id").append('=').append(JodaBeanUtils.toString(id)).append(',').append(' ');
+    buf.append("counterparty").append('=').append(JodaBeanUtils.toString(counterparty)).append(',').append(' ');
+    buf.append("tradeDate").append('=').append(JodaBeanUtils.toString(tradeDate)).append(',').append(' ');
+    buf.append("tradeTime").append('=').append(JodaBeanUtils.toString(tradeTime)).append(',').append(' ');
+    buf.append("zone").append('=').append(JodaBeanUtils.toString(zone)).append(',').append(' ');
+    buf.append("settlementDate").append('=').append(JodaBeanUtils.toString(settlementDate)).append(',').append(' ');
     buf.append("attributes").append('=').append(JodaBeanUtils.toString(attributes));
     buf.append('}');
     return buf.toString();
