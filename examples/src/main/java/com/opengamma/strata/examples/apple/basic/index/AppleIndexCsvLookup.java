@@ -2,10 +2,8 @@ package com.opengamma.strata.examples.apple.basic.index;
 
 import com.google.common.collect.ImmutableMap;
 import com.opengamma.strata.basics.currency.Currency;
-import com.opengamma.strata.basics.currency.CurrencyPair;
 import com.opengamma.strata.basics.date.DaysAdjustment;
 import com.opengamma.strata.basics.date.HolidayCalendarId;
-import com.opengamma.strata.basics.index.ImmutableFxIndex;
 import com.opengamma.strata.collect.io.CsvFile;
 import com.opengamma.strata.collect.io.CsvRow;
 import com.opengamma.strata.collect.io.ResourceConfig;
@@ -55,7 +53,7 @@ public class AppleIndexCsvLookup  implements NamedLookup<AppleIndex> {
   }
 
   private static ImmutableMap<String, AppleIndex> loadFromCsv() {
-    List<ResourceLocator> resources = ResourceConfig.orderedResources("FxIndexData.csv");
+    List<ResourceLocator> resources = ResourceConfig.orderedResources("AppleIndexData.csv");
     Map<String, AppleIndex> map = new HashMap<>();
     for (ResourceLocator resource : resources) {
       try {
@@ -74,19 +72,21 @@ public class AppleIndexCsvLookup  implements NamedLookup<AppleIndex> {
   }
 
   private static AppleIndex parseFxIndex(CsvRow row) {
-    String name = row.getField(NAME_FIELD);
-    Currency baseCurrency = Currency.parse(row.getField(CURRENCY_FIELD));
-    Currency counterCurrency = Currency.parse(row.getField(LOCATION_CURRENCY_FIELD));
-    HolidayCalendarId fixingCal = HolidayCalendarId.of(row.getField(GRADE_FIELD));
-    HolidayCalendarId maturityCal = HolidayCalendarId.of(row.getField(CALENDAR_FIELD));
+    final String name = row.getField(NAME_FIELD);
+    final Currency currency = Currency.parse(row.getField(CURRENCY_FIELD));
+    final String location = row.getField(LOCATION_CURRENCY_FIELD);
+    final int grade = Integer.parseInt(row.getField(GRADE_FIELD));
+    final DaysAdjustment maturityDaysAdjustment = DaysAdjustment.ofCalendarDays(Integer.parseInt(row.getField(MATURITY_DATE_ADJUSTMENT_FIELD)));
+    HolidayCalendarId calendar = HolidayCalendarId.of(row.getField(CALENDAR_FIELD));
     // build result
-//    return ImmutableAppleIndex.builder()
-//        .name(name)
-//        .currencyPair(CurrencyPair.of(baseCurrency, counterCurrency))
-//        .fixingCalendar(fixingCal)
-//    //    .maturityDateOffset(DaysAdjustment.ofBusinessDays(maturityDays, maturityCal))
-//        .build();
-    return null;
+    return ImmutableAppleIndex.builder()
+        .name(name)
+        .currency(currency)
+        .location(location)
+        .grade(grade)
+        .maturityDaysAdjustment(maturityDaysAdjustment)
+        .calendar(calendar)
+        .build();
   }
 
 }
