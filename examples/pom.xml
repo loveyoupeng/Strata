@@ -46,6 +46,23 @@
         </includes>
       </testResource>
     </testResources>
+    <plugins>
+      <plugin>
+        <groupId>org.joda</groupId>
+        <artifactId>joda-beans-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>generate-no-resolve</goal>
+            </goals>
+            <configuration>
+              <eclipse>true</eclipse>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
   <!-- ==================================================================== -->
