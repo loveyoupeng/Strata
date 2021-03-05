@@ -155,7 +155,6 @@ public class ImmutableAppleIndex implements AppleIndex, ImmutableBean, Serializa
     return calendar;
   }
 
-
   //-----------------------------------------------------------------------
   /**
    * Returns a builder that allows this bean to be mutated.
