@@ -5,18 +5,19 @@ import com.opengamma.strata.basics.ReferenceData;
 import com.opengamma.strata.basics.Resolvable;
 import com.opengamma.strata.basics.currency.Currency;
 import com.opengamma.strata.examples.apple.basic.index.AppleIndex;
+import com.opengamma.strata.examples.apple.basic.index.AppleIndexObservation;
 import com.opengamma.strata.product.Product;
 import java.io.Serializable;
 import java.time.LocalDate;
-import org.joda.beans.ImmutableBean;
-import org.joda.beans.gen.BeanDefinition;
-import org.joda.beans.gen.PropertyDefinition;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.joda.beans.Bean;
+import org.joda.beans.ImmutableBean;
 import org.joda.beans.JodaBeanUtils;
 import org.joda.beans.MetaBean;
 import org.joda.beans.MetaProperty;
+import org.joda.beans.gen.BeanDefinition;
+import org.joda.beans.gen.PropertyDefinition;
 import org.joda.beans.impl.direct.DirectFieldsBeanBuilder;
 import org.joda.beans.impl.direct.DirectMetaBean;
 import org.joda.beans.impl.direct.DirectMetaProperty;
@@ -33,7 +34,12 @@ public class Apple implements Product, Resolvable<ResolvedApple>, ImmutableBean,
 
   @Override
   public ResolvedApple resolve(final ReferenceData refData) {
-    return ResolvedApple.builder().matureDate(pickupDate).build();
+    final LocalDate maturityDate = index.calculateMaturityDate(pickupDate, refData);
+    return ResolvedApple.builder()
+        .matureDate(maturityDate)
+        .grade(grade)
+        .observation(AppleIndexObservation.builder().index(index).maturityDate(maturityDate).build())
+        .build();
   }
 
   @Override

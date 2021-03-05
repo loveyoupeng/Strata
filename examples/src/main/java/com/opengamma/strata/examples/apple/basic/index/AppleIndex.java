@@ -1,5 +1,6 @@
 package com.opengamma.strata.examples.apple.basic.index;
 
+import com.opengamma.strata.basics.ReferenceData;
 import com.opengamma.strata.basics.currency.Currency;
 import com.opengamma.strata.basics.date.DaysAdjustment;
 import com.opengamma.strata.basics.date.HolidayCalendarId;
@@ -7,6 +8,7 @@ import com.opengamma.strata.basics.index.Index;
 import com.opengamma.strata.collect.ArgChecker;
 import com.opengamma.strata.collect.named.ExtendedEnum;
 import com.opengamma.strata.collect.named.Named;
+import java.time.LocalDate;
 import org.joda.convert.FromString;
 
 public interface AppleIndex extends Index, Named {
@@ -30,4 +32,5 @@ public interface AppleIndex extends Index, Named {
 
   HolidayCalendarId getCalendar();
 
+  LocalDate calculateMaturityDate(final LocalDate pickupDate, final ReferenceData refData);
 }

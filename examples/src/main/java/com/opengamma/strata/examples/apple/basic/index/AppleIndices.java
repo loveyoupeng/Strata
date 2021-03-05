@@ -1,6 +1,5 @@
 package com.opengamma.strata.examples.apple.basic.index;
 
-import com.opengamma.strata.basics.index.FxIndex;
 import com.opengamma.strata.collect.named.ExtendedEnum;
 
 public class AppleIndices {
