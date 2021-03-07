@@ -37,7 +37,7 @@ public class AppleTrade implements ProductTrade, ResolvableTrade<ResolvedAppleTr
 
   @Override
   public ResolvedAppleTrade resolve(final ReferenceData refData) {
-    return null;
+    return ResolvedAppleTrade.builder().product(product.resolve(refData)).info(info).build();
   }
 
   @Override

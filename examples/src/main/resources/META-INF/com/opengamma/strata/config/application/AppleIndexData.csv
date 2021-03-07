@@ -1,5 +1,5 @@
 Name,Currency,Location,Grade,MaturityDateAdjustment,Calendar
 ,,,,,
-A-APPLE,CNH,Shangdong,1,5,CNBE
-B-APPLE,CNH,Shangdong,2,10,CNBE
-C-APPLE,CNH,Shangdong,3,15,CNBE
+A-APPLE,CNH,Shangdong,1,5,USNY
+B-APPLE,CNH,Shangdong,2,10,USNY
+C-APPLE,CNH,Shangdong,3,15,USNY
