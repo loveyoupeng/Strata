@@ -15,6 +15,6 @@ public class AppleTradePricer {
 
   public CurrencyAmount presentValue(final ResolvedAppleTrade trade,
       final AppleMarketData marketData) {
-    return pricer.presentValue(trade, marketData);
+    return pricer.presentValue(trade.getProduct(), marketData);
   }
 }

@@ -7,6 +7,7 @@ import com.opengamma.strata.calc.CalculationRunner;
 import com.opengamma.strata.calc.Column;
 import com.opengamma.strata.calc.Results;
 import com.opengamma.strata.calc.runner.CalculationFunctions;
+import com.opengamma.strata.data.ImmutableMarketData;
 import com.opengamma.strata.data.MarketData;
 import com.opengamma.strata.examples.apple.basic.index.AppleIndices;
 import com.opengamma.strata.examples.apple.measures.AppleTradeCalculationFunction;

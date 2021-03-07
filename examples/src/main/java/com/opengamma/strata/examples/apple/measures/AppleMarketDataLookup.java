@@ -5,6 +5,7 @@ import com.opengamma.strata.calc.runner.CalculationParameter;
 import com.opengamma.strata.calc.runner.FunctionRequirements;
 import com.opengamma.strata.data.MarketData;
 import com.opengamma.strata.data.scenario.ScenarioMarketData;
+import com.opengamma.strata.examples.apple.basic.index.AppleIndexObservation;
 
 public interface AppleMarketDataLookup extends CalculationParameter {
 
@@ -13,4 +14,6 @@ public interface AppleMarketDataLookup extends CalculationParameter {
   AppleMarketData marketDataView(final MarketData marketData);
 
   AppleScenarioMarketData marketDataView(final ScenarioMarketData marketData);
+
+  double getRate(final AppleIndexObservation observation);
 }

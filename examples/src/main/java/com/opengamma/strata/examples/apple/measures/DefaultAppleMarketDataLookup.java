@@ -4,6 +4,7 @@ import com.opengamma.strata.basics.currency.Currency;
 import com.opengamma.strata.calc.runner.FunctionRequirements;
 import com.opengamma.strata.data.MarketData;
 import com.opengamma.strata.data.scenario.ScenarioMarketData;
+import com.opengamma.strata.examples.apple.basic.index.AppleIndexObservation;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -63,6 +64,11 @@ public class DefaultAppleMarketDataLookup implements AppleMarketDataLookup, Immu
   @Override
   public AppleScenarioMarketData marketDataView(final ScenarioMarketData marketData) {
     return DefaultAppleScenarioMarketData.builder().lookup(this).marketData(marketData).build();
+  }
+
+  @Override
+  public double getRate(final AppleIndexObservation observation) {
+    return observation.getIndex().getGrade() * 0.4;
   }
 
   @Override
